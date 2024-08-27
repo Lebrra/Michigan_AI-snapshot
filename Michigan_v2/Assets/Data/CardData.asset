@@ -1,0 +1,22 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b43418ff6261dd246b62b4c1d9d47b63, type: 3}
+  m_Name: CardData
+  m_EditorClassIdentifier: 
+  jokerEmoji: star
+  spade: {fileID: 21300000, guid: d38e403d450b8804392524c84b5be0f8, type: 3}
+  heart: {fileID: 21300000, guid: e47ee3f484ad9db4e9a02c489481204b, type: 3}
+  club: {fileID: 21300000, guid: 0a85612083457344da1a221b765bc76c, type: 3}
+  diamond: {fileID: 21300000, guid: c52745b1fc630d14f94b01f84065ade1, type: 3}
+  joker: {fileID: 0}
+  primary: {r: 0.7075472, g: 0.12348701, b: 0.12348701, a: 1}
+  secondary: {r: 0.084905684, g: 0.084905684, b: 0.084905684, a: 1}
