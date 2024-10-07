@@ -20,6 +20,10 @@ public class GameManager : MonoBehaviour
     public Deck Deck => currentDeck;
 
     int outPlayer = -1;
+
+    List<CardBundle> playerOutBundles;
+    public List<CardBundle> OutBundles => playerOutBundles;
+
     public bool HasPlayerGoneOut => outPlayer >= 0;
     public int WildValue => currentRound;
 
@@ -29,7 +33,30 @@ public class GameManager : MonoBehaviour
         I = this;
     }
 
-    public void InitializeSingleplayerGame(string playerName, List<AIPlayerData> aiPlayers)
+    public void InitializeAIGame(List<AIPlayerData> aiPlayers)   // todo: aiProps should be a setting
+    {
+        // validate player count:
+        if (aiPlayers.Count < 1 || aiPlayers.Count > 5)
+        {
+            Debug.LogError("Invalid player count; cannot start game!");
+            return;
+        }
+
+        for (int i = 0; i < aiPlayers.Count; i++)
+        {
+            players.Add(new AIPlayer(aiPlayers[i]));
+        }
+
+        // set values:
+        currentRound = FirstRound;
+        playerTurn = startingPlayer = Random.Range(0, players.Count);
+        outPlayer = -1;
+
+        // start round!
+        StartNewRound(false);
+    }
+
+    public void InitializeSingplayerGame(string playerName, List<AIPlayerData> aiPlayers)   // todo: aiProps should be a setting
     {
         // validate player count:
         if (aiPlayers.Count < 1 || aiPlayers.Count > 5)
@@ -43,7 +70,7 @@ public class GameManager : MonoBehaviour
 
         for (int i = 0; i < aiPlayers.Count; i++)
         {
-            players.Add(new AIPlayer(aiPlayers[i].name, aiPlayers[i].difficulty));
+            players.Add(new AIPlayer(aiPlayers[i]));
         }
 
         // set values:
@@ -87,9 +114,23 @@ public class GameManager : MonoBehaviour
         }
     }
 
-    public void SetPlayerOut()
+    public void SetPlayerOut(List<CardBundle> outBundles)
     {
         outPlayer = playerTurn;
+        playerOutBundles = new();
+        playerOutBundles.AddRange(outBundles);
+    }
+
+    public void UpdateOutBundles(List<List<Card>> playsPerBundle)
+    {
+        // todo: ensure that cards aren't out of order in these card lists
+        for (int i = 0; i < playerOutBundles.Count; i++)
+        {
+            foreach (var card in playsPerBundle[i])
+            {
+                playerOutBundles[i].AddCard(card);
+            }
+        }
     }
 
     public void NextTurn()

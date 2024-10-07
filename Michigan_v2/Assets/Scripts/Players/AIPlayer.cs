@@ -11,58 +11,90 @@ using UnityEngine;
  */
 public class AIPlayer : Player
 {
-    AIDifficulty difficulty;
+    AIPlayerProperties properties;
 
     int currentHandScore = int.MaxValue;
 
-    public AIPlayer(string n, AIDifficulty d) : base(n)
+    public AIPlayer(string n, AIPlayerProperties prop) : base(n)
     {
-        difficulty = d;
+        properties = prop;
+    }
+
+    public AIPlayer(AIPlayerData data) : base(data.name)
+    {
+        properties = data.properties;
+    }
+
+    public void UpdateProperties(AIPlayerProperties prop)
+    {
+        properties = prop;
     }
 
     public override void TakeTurn(bool isLastTurn)
     {
-        DrawCard();
+        // todo: beauroutines
+        
+    }
+
+    IEnumerator TakeDelayedTurn(bool isLastTurn)
+    {
+        var currentTime = Time.time;
+        var drawn = DrawCard();
+
+        yield return new WaitForSeconds(Mathf.Clamp(properties.DrawDelay - (Time.time - currentTime), 0F, properties.DrawDelay));
+
+        // todo: wait for draw animation (generally, not just ai)
+        VisualizeCardDrawn(drawn);
+
+        currentTime = Time.time;
 
         // get best play:
-        Utilities.FindBestPlay(hand, GameManager.I.WildValue, out var bundles, out var leftovers);
-        var score = GetScoreAndDiscard(leftovers, out var discard);
-
         if (isLastTurn)
         {
-            // todo: find best play given another player has gone out
+            AI.FindBestPlay(hand, GameManager.I.WildValue, GameManager.I.OutBundles, out var bundles, out var leftovers, out var bundlePlays);
+            var score = GetScoreAndDiscard(leftovers, out var discard);
             AddToScore(score);
+            GameManager.I.UpdateOutBundles(bundlePlays);
 
+            yield return new WaitForSeconds(Mathf.Clamp(properties.DiscardDelay - (Time.time - currentTime), 0F, properties.DiscardDelay));
+
+            GameManager.I.Deck.Discard(discard);
+            yield return null;
+            VisualizeCardDiscarded(discard);
         }
-        else if(score == 0)
+        else
         {
-            // todo: we can go out!
-            AddToScore(score);
-        }
+            AI.FindBestPlay(hand, GameManager.I.WildValue, out var bundles, out var leftovers);
+            var score = GetScoreAndDiscard(leftovers, out var discard);
 
-        // discard and end
-        GameManager.I.Deck.Discard(discard);
+            yield return new WaitForSeconds(Mathf.Clamp(properties.DiscardDelay - (Time.time - currentTime), 0F, properties.DiscardDelay));
+
+            if (score == 0)
+            {
+                AddToScore(score);
+                GameManager.I.SetPlayerOut(bundles);
+                VisualizeFirstOut(bundles);
+            }
+
+            GameManager.I.Deck.Discard(discard);
+            yield return null;
+            VisualizeCardDiscarded(discard);
+        }
     }
 
     #region AI Helpers
 
-    void DrawCard()
+    Card DrawCard()
     {
-        switch (difficulty)
+        Card drawnCard;
+
+        switch (properties.Difficulty)
         {
-            case AIDifficulty.Easy:
-
-                bool drawChoice = Random.Range(0, 2) == 0;
-                if (drawChoice) AddCardToEnd(GameManager.I.Deck.DrawFromDiscard());
-                else AddCardToEnd(GameManager.I.Deck.DrawFromDeck());
-
-                break;
-
             case AIDifficulty.Medium:
             case AIDifficulty.Hard:
                 // determine if hand would be better with discard:
                 var cardsIncludingDiscard = new List<Card> { GameManager.I.Deck.TopOfDiscard };
-                Utilities.FindBestPlay(cardsIncludingDiscard, GameManager.I.WildValue, out var bundles, out var leftovers);
+                AI.FindBestPlay(cardsIncludingDiscard, GameManager.I.WildValue, out var bundles, out var leftovers);
 
                 var discard = leftovers.OrderBy(b => b.value).Last();
                 leftovers.Remove(discard);
@@ -71,13 +103,24 @@ public class AIPlayer : Player
 
                 if (scoreWithDiscard < currentHandScore)
                 {
-                    AddCardToEnd(GameManager.I.Deck.DrawFromDiscard());
+                    drawnCard =  GameManager.I.Deck.DrawFromDiscard();
                     currentHandScore = scoreWithDiscard;
                 }
-                else AddCardToEnd(GameManager.I.Deck.DrawFromDeck());
+                else drawnCard = GameManager.I.Deck.DrawFromDeck();
+
+                break;
+
+            default:
+
+                bool drawChoice = Random.Range(0, 2) == 0;
+                if (drawChoice) drawnCard = GameManager.I.Deck.DrawFromDiscard();
+                else drawnCard = GameManager.I.Deck.DrawFromDeck();
 
                 break;
         }
+
+        AddCardToEnd(drawnCard);
+        return drawnCard;
     }
 
     int GetScoreAndDiscard(List<Card> leftovers, out Card discard)
@@ -99,5 +142,5 @@ public class AIPlayer : Player
 public struct AIPlayerData
 {
     public string name;
-    public AIDifficulty difficulty;
+    public AIPlayerProperties properties;
 }

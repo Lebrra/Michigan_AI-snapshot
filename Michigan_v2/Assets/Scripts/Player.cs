@@ -68,4 +68,23 @@ public abstract class Player
     }
 
     public virtual void TakeTurn(bool isLastTurn) { }
+
+    protected void VisualizeCardDrawn(Card card)    // todo: should this be a location instead?
+    {
+        Debug.Log($"{name} has drawn {card}!");
+    }
+
+    protected void VisualizeFirstOut(List<CardBundle> bundles)
+    {
+        Debug.Log($"{name} has gone out!");
+        Debug.Log($"{name} has played...");
+
+        foreach (var bundle in bundles)
+            Debug.Log(bundle.ToString());
+    }
+
+    protected void VisualizeCardDiscarded(Card card)
+    {
+        Debug.Log($"{name} has discarded {card}!");
+    }
 }

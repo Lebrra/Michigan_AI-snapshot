@@ -64,14 +64,14 @@ public class Tester : MonoBehaviour
         var man = FindObjectOfType<GameManager>();
         if (man)
         {
-            man.InitializeSingleplayerGame("human", testPlayers);
+            man.InitializeAIGame(testPlayers);
         }
     }
 
     [ContextMenu("Test Best Score")]
     void TryGettingBestScore()
     {
-        Utilities.FindBestPlay(testCardList, wild, out var bundle, out var left);
+        AI.FindBestPlay(testCardList, wild, out var bundle, out var left);
 
         if (left.Count == 0)
         {
