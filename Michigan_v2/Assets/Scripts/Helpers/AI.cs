@@ -44,6 +44,13 @@ public static class AI
 
             return;
         }
+        else if (allAvailableBundles.Count == 0)
+        {
+            // we do not have any bundles, so we can exit here
+            leftovers = hand;
+            bundles = new List<CardBundle>();
+            return;
+        }
         // else => we may still be able to go out with multiple bundles, or we will have to take some points here...
 
         bundles = new List<CardBundle>();
@@ -425,5 +432,205 @@ public static class AI
         // now we have bundles.Count list of possible plays per bundle - we need to see if we can play on multiple at once now
 
         return isolatedPlays;
+    }
+
+    public static int GetScore(List<Card> leftovers)
+    {
+        int score = 0;
+        for (int j = 0; j < leftovers.Count - 1; j++)
+        {
+            score += Utilities.GetScoreValue(leftovers[j]);
+        }
+        return score;
+    }
+
+    public static Card GetLastTurnDiscard(List<Card> leftovers)
+    {
+        return leftovers.OrderByDescending(c => c.value).First();
+    }
+
+    public static Card FindBestDiscard(List<Card> leftovers)
+    {
+        // first remove wilds; don't discard these
+        leftovers = leftovers.Where(c => c.value > 0).ToList();
+
+        if (leftovers.Count < 2) return leftovers.LastOrDefault();
+
+        // with the leftover cards, we want to find any cards that may lead to bundles
+
+        // possibleSets = values that have more than one instance in hand - note this has to be 2 instances or it would have been a bundle
+        List<int> possibleSets = new List<int>();
+        List<Card> cardIterations = leftovers.Copy();
+        while (cardIterations.Count > 0)
+        {
+            var card = cardIterations[0];
+            cardIterations.Remove(card);
+
+            int count = cardIterations.Count(c => c.value == card.value);
+            if (count > 0)
+            {
+                possibleSets.Add(card.value);
+                cardIterations = cardIterations.Where(c => c.value != card.value).ToList();
+            }
+        }
+
+        // assumptions: 
+        //  - strong runs are exclusively groups of 2 (if they were 3+ then they would have already been a valid bundle)
+        //  - if there are card dupes we don't really care (they will be in a set then which is 'stronger')
+        List<List<Card>> strongPartialRuns = new List<List<Card>>();
+        cardIterations = leftovers.Copy();
+        while (cardIterations.Count > 0)
+        {
+            var card = cardIterations[0];
+            cardIterations.Remove(card);
+
+            var suitCards = cardIterations.Where(c => c.suit == card.suit).ToList();
+            List<Card> partialRun = new List<Card> { card };
+
+            var minCard = suitCards.FirstOrDefault(c => c.value == card.value - 1);
+            if (minCard != default)
+            {
+                partialRun.Add(minCard);
+                cardIterations.Remove(minCard);
+            }
+            var maxCard = suitCards.FirstOrDefault(c => c.value == card.value + 1);
+            if (maxCard != default)
+            {
+                partialRun.Add(maxCard);
+                cardIterations.Remove(maxCard);
+            }
+
+            if (partialRun.Count > 1) strongPartialRuns.Add(partialRun);
+        }
+
+        // weak = there is a gap between cards
+        // note we can't assume a card is only in one pair here
+        List<List<Card>> weakPartialRuns = new List<List<Card>>();
+        cardIterations = leftovers.Copy();
+        while (cardIterations.Count > 0)
+        {
+            var card = cardIterations[0];
+            cardIterations.Remove(card);
+
+            var suitCards = leftovers.Where(c => c.suit == card.suit).ToList();
+
+            var minCard = suitCards.FirstOrDefault(c => c.value == card.value - 2);
+            if (minCard != default)
+            {
+                List<Card> partialRun = new List<Card> { card };
+                partialRun.Add(minCard);
+                weakPartialRuns.Add(partialRun);
+            }
+            var maxCard = suitCards.FirstOrDefault(c => c.value == card.value + 2);
+            if (maxCard != default)
+            {
+                List<Card> partialRun = new List<Card> { card };
+                partialRun.Add(maxCard);
+                weakPartialRuns.Add(partialRun);
+            }
+        }
+        weakPartialRuns = weakPartialRuns.Distinct().ToList();
+
+        // any cards not fit in any? if yes, output those
+        List<Card> trueLeftovers = leftovers.Copy();
+        trueLeftovers = trueLeftovers.Where(c => !possibleSets.Contains(c.value)).ToList();
+        trueLeftovers = trueLeftovers.Where(c =>
+        {
+            foreach (var stronglist in strongPartialRuns)
+            {
+                if (stronglist.Contains(c)) return false;
+            }
+            return true;
+        }).ToList();
+        trueLeftovers = trueLeftovers.Where(c =>
+        {
+            foreach (var weakList in weakPartialRuns)
+            {
+                if (weakList.Contains(c)) return false;
+            }
+            return true;
+        }).ToList();
+
+        if (trueLeftovers.Any()) return trueLeftovers.OrderBy(c => c.value).LastOrDefault();
+
+        // else sort strong to weak: sets, strong runs, weak runs
+
+        var mixedPartialRuns = weakPartialRuns.Where(ls =>
+        {
+            foreach (var c in ls)
+            {
+                foreach (var strongList in strongPartialRuns)
+                {
+                    if (strongList.Contains(c)) return true;
+                }
+            }
+            return false;
+        }).ToList();
+
+
+        // next if there are any isolated weak sets we can choose to drop one of those:
+        var weakestWeakRuns = weakPartialRuns.Copy();
+        weakestWeakRuns = weakestWeakRuns.Where(ls => !mixedPartialRuns.Contains(ls)).ToList();
+        weakestWeakRuns = weakestWeakRuns.Where(ls =>
+        {
+            foreach (var c in ls)
+            {
+                if (possibleSets.Contains(c.value) && leftovers.Any(l => l.value == c.value && l.suit == c.suit)) return false;
+            }
+            return true;
+        }).ToList();
+        if (weakestWeakRuns.Any())
+        {
+            trueLeftovers.Clear();
+            foreach (var ls in weakestWeakRuns) trueLeftovers.AddRange(ls);
+            return trueLeftovers.Distinct().OrderBy(c => c.value).LastOrDefault();
+        }
+
+        // moving up to isolated strong sets:
+        var weakestStrongRuns = strongPartialRuns.Copy();
+        weakestStrongRuns = weakestStrongRuns.Where(ls => !mixedPartialRuns.Contains(ls)).ToList();
+        weakestStrongRuns = weakestStrongRuns.Where(ls =>
+        {
+            foreach (var c in ls)
+            {
+                if (possibleSets.Contains(c.value) && leftovers.Any(l => l.value == c.value && l.suit == c.suit)) return false;
+            }
+            return true;
+        }).ToList();
+        if (weakestStrongRuns.Any())
+        {
+            trueLeftovers.Clear();
+            foreach (var ls in weakestStrongRuns) trueLeftovers.AddRange(ls);
+            return trueLeftovers.Distinct().OrderBy(c => c.value).LastOrDefault();
+        }
+
+        // decision time! are mixed runs or isolated sets stronger ?
+        // chosing sets for now
+        if (possibleSets.Any())
+        {
+            var isolatedSets = possibleSets.Copy();
+            isolatedSets = isolatedSets.Where(n =>
+            {
+                foreach (var ls in weakPartialRuns) if (ls.Any(c => c.value == n)) return false;
+                foreach (var ls in strongPartialRuns) if (ls.Any(c => c.value == n)) return false;
+                return true;
+            }).ToList();
+
+            if (isolatedSets.Any())
+            {
+                return leftovers.Where(c => isolatedSets.Contains(c.value)).OrderBy(c => c.value).LastOrDefault();
+            }
+        }
+
+        // now we have to pick something mixed...
+        if (mixedPartialRuns.Any())
+        {
+            trueLeftovers.Clear();
+            foreach (var ls in mixedPartialRuns) trueLeftovers.AddRange(ls);
+            return trueLeftovers.Distinct().OrderBy(c => c.value).LastOrDefault();
+        }
+
+        // are we still here? just pick one then (it will be a pair)
+        return leftovers.OrderBy(c => c.value).LastOrDefault();
     }
 }

@@ -1,3 +1,4 @@
+using BeauRoutine;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
@@ -7,7 +8,7 @@ public class GameManager : MonoBehaviour
     public static GameManager I;
 
     [SerializeField]
-    List<Player> players;
+    List<Player> players = new List<Player>();
 
     int playerTurn = 0;
     int startingPlayer = 0;
@@ -15,6 +16,8 @@ public class GameManager : MonoBehaviour
     static readonly int FirstRound = 3;
     static readonly int LastRound = 13;
     int currentRound = 3;
+    bool isRoundRunning = false;
+    Routine roundReset;
 
     Deck currentDeck;
     public Deck Deck => currentDeck;
@@ -42,6 +45,7 @@ public class GameManager : MonoBehaviour
             return;
         }
 
+        players = new List<Player>();
         for (int i = 0; i < aiPlayers.Count; i++)
         {
             players.Add(new AIPlayer(aiPlayers[i]));
@@ -82,6 +86,13 @@ public class GameManager : MonoBehaviour
         StartNewRound(false);
     }
 
+    IEnumerator WaitToStartNewRound()
+    {
+        yield return new WaitUntil(() => !isRoundRunning);
+        yield return 1F;
+        StartNewRound();
+    }
+
     public void StartNewRound(bool updateValues = true)
     {
         if (updateValues)
@@ -98,19 +109,24 @@ public class GameManager : MonoBehaviour
             player.NewHand(currentDeck.DrawNewHand(currentRound));
         }
 
+        Debug.LogWarning($"[GameManager] STARTING ROUND {Utilities.ValueToString(WildValue)}");
+        isRoundRunning = true;
         // start turn order !
         players[playerTurn].TakeTurn(false);
     }
 
     void EndRound()
     {
+        Debug.LogWarning($"[GameManager] COMPLETED ROUND {Utilities.ValueToString(WildValue)}");
+        isRoundRunning = false;
+
         if (currentRound == LastRound)
         {
             // game is over!
         }
         else
         {
-            StartNewRound();
+            roundReset.Replace(WaitToStartNewRound());
         }
     }
 
@@ -135,6 +151,8 @@ public class GameManager : MonoBehaviour
 
     public void NextTurn()
     {
+        if (!isRoundRunning) return;
+
         // first test end states:
         int nextTurn = (playerTurn + 1) % players.Count;
 

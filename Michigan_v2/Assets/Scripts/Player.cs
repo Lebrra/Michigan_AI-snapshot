@@ -69,22 +69,69 @@ public abstract class Player
 
     public virtual void TakeTurn(bool isLastTurn) { }
 
-    protected void VisualizeCardDrawn(Card card)    // todo: should this be a location instead?
+    protected void VisualizeCardDrawn(Card card, bool discard)    // todo: should this be a location instead?
     {
-        Debug.Log($"{name} has drawn {card}!");
+        if (discard) Debug.Log($"{name} has drawn {card} from the discard pile!");
+        else Debug.Log($"{name} has drawn {card} from the deck!");
     }
 
     protected void VisualizeFirstOut(List<CardBundle> bundles)
     {
-        Debug.Log($"{name} has gone out!");
+        Debug.LogWarning($"{name} has gone out!");
         Debug.Log($"{name} has played...");
 
         foreach (var bundle in bundles)
             Debug.Log(bundle.ToString());
+
+        Debug.Log($"{name}'s current score after round {GameManager.I.WildValue} is {Score}");
     }
 
     protected void VisualizeCardDiscarded(Card card)
     {
         Debug.Log($"{name} has discarded {card}!");
+    }
+
+    protected void VisualizeFinalRoundPlay(List<CardBundle> bundles, List<List<Card>> bundlePlays, int points)
+    {
+        Debug.Log($"{name} played their final round turn and got a score of {points}");
+
+        if (bundles.Count > 0 || bundlePlays.Count > 0)
+        {
+            Debug.Log($"{name} was able to play...");
+
+            foreach (var bundle in bundles)
+                Debug.Log(bundle.ToString());
+
+            for (int i = 0; i < bundlePlays.Count; i++)
+            {
+                if (bundlePlays[i].Count > 0)
+                {
+                    string playString = $"Played on bundle {i + 1}: ";
+                    if (bundlePlays[i].Count > 1)
+                    {
+                        for (int j = 0; j < bundlePlays[i].Count - 1; j++)
+                        {
+                            playString += bundlePlays[i][j].ToString() + ", ";
+                        }
+                    }
+                    playString += bundlePlays[i][bundlePlays[i].Count - 1].ToString();
+                    Debug.Log(playString);
+                }
+            }
+        }
+
+        Debug.Log($"{name}'s current score after round {GameManager.I.WildValue} is {Score}");
+    }
+
+    protected void PrintHand()
+    {
+        string handString = "";
+        for(int i = 0; i < hand.Count - 1; i++)
+        {
+            handString += hand[i].ToString() + ", ";
+        }
+        handString += hand[hand.Count - 1].ToString();
+
+        Debug.Log($"{name}'s current hand: {handString}");
     }
 }
