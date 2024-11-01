@@ -28,8 +28,8 @@ public struct Card
     public override string ToString()
     {
         if (value == 0)
-            return $"{(suit == Suit.Hearts || suit == Suit.Diamonds ? "Red" : "Black")} Joker";
+            return $"[{(suit == Suit.Hearts || suit == Suit.Diamonds ? "Red" : "Black")} Joker]";
         else
-            return $"{Utilities.ValueToString(value)} of {suit}";
+            return $"[{Utilities.ValueToString(value)} of {suit}]";
     }
 }

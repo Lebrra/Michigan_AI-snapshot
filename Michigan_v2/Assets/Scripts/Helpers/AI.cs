@@ -128,6 +128,7 @@ public static class AI
                         }
                     }
                 }
+                else leftovers = new List<Card> { finalCard };
 
                 bundles.Clear();
                 bundles.AddRange(currentBundles);
@@ -168,57 +169,59 @@ public static class AI
         bundlePlaysPerBundle = new();
 
         FindBestPlay(hand, wildValue, out var outBundles, out var left);
-        if (left.Count == 1)
+
+        // recording best non-bundle play in case its better:
+        int bestScore = int.MaxValue;
+        if (outBundles.Count > 0)
         {
-            // we don't need the playableBundles just quit
             bundles.AddRange(outBundles);
             leftovers.AddRange(left);
             bundlePlaysPerBundle = new();
-            return;
+
+            // we can go out; leave
+            if (left.Count == 1) return;
+            else bestScore = AI.GetScore(left);
         }
-        else
+
+        // structure: POSSIBLE PLAYS > BUNDLES > CARDS
+        List<List<List<Card>>> playsSortedPerBundle = GetMixedBundlePlays(hand, wildValue, playableBundles);
+
+        // after that we can iterate through these to find our best play:
+        List<Card> bundlePlay = new List<Card>();
+
+        foreach (var bundlePlays in playsSortedPerBundle)
         {
-            // structure: POSSIBLE PLAYS > BUNDLES > CARDS
-            List<List<List<Card>>> playsSortedPerBundle = GetMixedBundlePlays(hand, wildValue, playableBundles);
+            // is bundlePlays up to 4 lists of cards to play per bundle?
+            var remainingHand = hand.Copy(bundlePlays.ToArray());
+            FindBestPlay(remainingHand, wildValue, out var tempBundles, out var tempLeft);
 
-            // after that we can iterate through these to find our best play:
-            int bestScore = int.MaxValue;
-            List<Card> bundlePlay = new List<Card>();
-
-            foreach (var bundlePlays in playsSortedPerBundle)
+            if (tempLeft.Count == 1)
             {
-                // is bundlePlays up to 4 lists of cards to play per bundle?
-                var remainingHand = hand.Copy(bundlePlays.ToArray());
-                FindBestPlay(remainingHand, wildValue, out var tempBundles, out var tempLeft);
+                bundles = new();
+                leftovers = new();
+                bundlePlaysPerBundle = new();
 
-                if (tempLeft.Count == 1)
-                {
-                    bundles = new();
-                    leftovers = new();
-                    bundlePlaysPerBundle = new();
-
-                    bundles.AddRange(tempBundles);
-                    leftovers.AddRange(tempLeft);
-                    bundlePlaysPerBundle.AddRange(bundlePlays);
-                    return;
-                }
-
-                var score = tempLeft.Sum(c => c.value);
-                if (score < bestScore)
-                {
-                    bestScore = score;
-
-                    bundles = new();
-                    leftovers = new();
-                    bundlePlaysPerBundle = new();
-
-                    bundles.AddRange(tempBundles);
-                    leftovers.AddRange(tempLeft);
-                    bundlePlaysPerBundle.AddRange(bundlePlays);
-                }
-
-                // todo: when returned we need to update the actual bundles (or should/can it be done here?)
+                bundles.AddRange(tempBundles);
+                leftovers.AddRange(tempLeft);
+                bundlePlaysPerBundle.AddRange(bundlePlays);
+                return;
             }
+
+            var score = tempLeft.Sum(c => c.value);
+            if (score < bestScore)
+            {
+                bestScore = score;
+
+                bundles = new();
+                leftovers = new();
+                bundlePlaysPerBundle = new();
+
+                bundles.AddRange(tempBundles);
+                leftovers.AddRange(tempLeft);
+                bundlePlaysPerBundle.AddRange(bundlePlays);
+            }
+
+            // todo: when returned we need to update the actual bundles (or should/can it be done here?)
         }
 
         // did we find a valid play?
@@ -408,7 +411,7 @@ public static class AI
                             var newPlay = playsToIterate[i].Copy();
                             for (int bund = 0; bund < newPlay.Count; bund++)
                             {
-                                if (remainingIsolatedPlay[i].Count > 0) // && newPlay[i].Count == 0)    <- this shouldn't happen
+                                if (remainingIsolatedPlay.Count > i && remainingIsolatedPlay[i].Count > 0) // && newPlay[i].Count == 0)    <- this shouldn't happen
                                 {
                                     // assuming all lists are defined
                                     newPlay[i] = remainingIsolatedPlay[i].Copy();
@@ -434,10 +437,14 @@ public static class AI
         return isolatedPlays;
     }
 
+    /// <summary>
+    /// Assumes discard is not in here
+    /// </summary>
+    /// <returns></returns>
     public static int GetScore(List<Card> leftovers)
     {
         int score = 0;
-        for (int j = 0; j < leftovers.Count - 1; j++)
+        for (int j = 0; j < leftovers.Count; j++)
         {
             score += Utilities.GetScoreValue(leftovers[j]);
         }
@@ -446,7 +453,7 @@ public static class AI
 
     public static Card GetLastTurnDiscard(List<Card> leftovers)
     {
-        return leftovers.OrderByDescending(c => c.value).First();
+        return leftovers.OrderBy(b => b.value).Last();
     }
 
     public static Card FindBestDiscard(List<Card> leftovers)

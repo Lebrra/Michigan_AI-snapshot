@@ -296,11 +296,16 @@ MonoBehaviour:
     suit: 4
   - value: 9
     suit: 4
+  testOutBundle1: []
+  testOutBundle2: []
+  testOutBundle3: []
+  testOutBundle4: []
   testPlayers:
   - name: ai 1
     properties: {fileID: 11400000, guid: 5dbe6eaeb9315c543b6503849d36d931, type: 2}
   - name: ai 2
     properties: {fileID: 11400000, guid: 5dbe6eaeb9315c543b6503849d36d931, type: 2}
+  turnStartOverride: 3
 --- !u!114 &720304576
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -371,11 +376,16 @@ MonoBehaviour:
     suit: 4
   - value: 9
     suit: 4
+  testOutBundle1: []
+  testOutBundle2: []
+  testOutBundle3: []
+  testOutBundle4: []
   testPlayers:
   - name: ai 1
     properties: {fileID: 11400000, guid: 5dbe6eaeb9315c543b6503849d36d931, type: 2}
   - name: ai 2
     properties: {fileID: 11400000, guid: 5dbe6eaeb9315c543b6503849d36d931, type: 2}
+  turnStartOverride: 8
 --- !u!114 &829801695
 MonoBehaviour:
   m_ObjectHideFlags: 0

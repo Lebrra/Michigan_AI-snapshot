@@ -58,7 +58,7 @@ public abstract class CardBundle
             if (iterator < cards.Count) cardList += ", ";
         }
 
-        return $"{BundleType}: [{cardList}]";
+        return $"{BundleType}: ({cardList})";
     }
 
     public enum CardBundleType

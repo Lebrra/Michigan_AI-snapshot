@@ -17,7 +17,7 @@ public class AIPlayer : Player
 
     int currentHandScore = int.MaxValue;
 
-    Card lastSawDiscard = new Card();
+    Card lastDiscard = new Card();
 
     Routine turn;
 
@@ -50,6 +50,7 @@ public class AIPlayer : Player
         Debug.Log($"Starting {Name}'s turn!");
 
         var currentTime = Time.time;
+        
         var _ = DrawCard();
 
         yield return new WaitForSeconds(Mathf.Clamp(properties.DrawDelay - (Time.time - currentTime), 0F, properties.DrawDelay));
@@ -74,7 +75,8 @@ public class AIPlayer : Player
             VisualizeFinalRoundPlay(bundles, bundlePlays, score);
             GameManager.I.UpdateOutBundles(bundlePlays);
             yield return null;
-            
+
+            lastDiscard = discard;
             GameManager.I.Deck.Discard(discard);
             yield return null;
             VisualizeCardDiscarded(discard);
@@ -87,15 +89,15 @@ public class AIPlayer : Player
             yield return new WaitForSeconds(Mathf.Clamp(properties.DiscardDelay - (Time.time - currentTime), 0F, properties.DiscardDelay));
 
             RemoveCard(discard);
-            var score = AI.GetScore(leftovers);
 
-            if (score == 0)
+            if (leftovers.Count == 1)
             {
-                AddToScore(score);
+                AddToScore(0);
                 GameManager.I.SetPlayerOut(bundles);
                 VisualizeFirstOut(bundles);
             }
 
+            lastDiscard = discard;
             GameManager.I.Deck.Discard(discard);
             yield return null;
             VisualizeCardDiscarded(discard);
@@ -136,8 +138,8 @@ public class AIPlayer : Player
             default:
 
                 // if we are stuck in an AI loop that keeps picking up the same card, stop
-                if (GameManager.I.Deck.TopOfDiscard == lastSawDiscard) drawFromDiscard = false;
-                else drawFromDiscard = Random.Range(0, 2) == 0;
+                if (GameManager.I.Deck.TopOfDiscard == lastDiscard) drawFromDiscard = false;
+                else drawFromDiscard = Random.Range(0, 4) == 0;
                 break;
         }
 

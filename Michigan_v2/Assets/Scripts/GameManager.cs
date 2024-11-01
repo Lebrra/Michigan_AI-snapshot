@@ -13,8 +13,8 @@ public class GameManager : MonoBehaviour
     int playerTurn = 0;
     int startingPlayer = 0;
 
-    static readonly int FirstRound = 3;
-    static readonly int LastRound = 13;
+    const int FirstRound = 3;
+    const int LastRound = 13;
     int currentRound = 3;
     bool isRoundRunning = false;
     Routine roundReset;
@@ -36,7 +36,7 @@ public class GameManager : MonoBehaviour
         I = this;
     }
 
-    public void InitializeAIGame(List<AIPlayerData> aiPlayers)   // todo: aiProps should be a setting
+    public void InitializeAIGame(List<AIPlayerData> aiPlayers, int StartTurn = FirstRound)   // todo: aiProps should be a setting
     {
         // validate player count:
         if (aiPlayers.Count < 1 || aiPlayers.Count > 5)
@@ -52,7 +52,7 @@ public class GameManager : MonoBehaviour
         }
 
         // set values:
-        currentRound = FirstRound;
+        currentRound = StartTurn;
         playerTurn = startingPlayer = Random.Range(0, players.Count);
         outPlayer = -1;
 
@@ -142,10 +142,14 @@ public class GameManager : MonoBehaviour
         // todo: ensure that cards aren't out of order in these card lists
         for (int i = 0; i < playerOutBundles.Count; i++)
         {
-            foreach (var card in playsPerBundle[i])
+            // playsPerBundle may be an empty list
+            if (playsPerBundle.Count > i)
             {
-                playerOutBundles[i].AddCard(card);
-            }
+                foreach (var card in playsPerBundle[i])
+                {
+                    playerOutBundles[i].AddCard(card);
+                }
+            } 
         }
     }
 
