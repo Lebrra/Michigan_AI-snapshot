@@ -39,6 +39,24 @@ public class Tester : MonoBehaviour
     [SerializeField]
     int turnStartOverride = 3;
 
+    [SerializeField]
+    GameObject roundOverBanner = null;
+    [SerializeField]
+    List<HandUI> handVisualizers = new List<HandUI>();  // assuming handVisualizers.Count == testPlayers.Count or will not display!
+
+
+    private void Start()
+    {
+        GameManager.RoundBegin += () => ToggleBanner(false);
+        GameManager.RoundEnd += () => ToggleBanner(true);
+        ToggleBanner(false);
+    }
+
+    void ToggleBanner(bool on)
+    {
+        if (roundOverBanner) roundOverBanner.SetActive(on);
+    }
+
     [ContextMenu("Display Whole Deck")]
     void ShowAllCards()
     {

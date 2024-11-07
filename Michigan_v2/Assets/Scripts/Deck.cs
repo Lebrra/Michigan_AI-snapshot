@@ -11,6 +11,7 @@ public class Deck
     /// Whenever the discard pile visually changes
     /// Card = the current card on top of the discard pile
     /// </summary>
+    public static Action DiscardPileTaken;
     public static Action<Card> DiscardPileUpdated;
     public static Action DiscardPPileSentToDeck;
     public static Action DeckIsEmpty;
@@ -86,7 +87,7 @@ public class Deck
         {
             var topOfDiscard = discard.LastOrDefault();
             discard.Remove(topOfDiscard);
-            DiscardPileUpdated?.Invoke(TopOfDiscard);
+            DiscardPileTaken?.Invoke();
             return topOfDiscard;
         }
         else return new Card(-1, Suit.None);

@@ -21,9 +21,12 @@ public class AIPlayer : Player
 
     Routine turn;
 
-    public AIPlayer(string n, AIPlayerProperties prop) : base(n)
+    HandUI debug_visibleHand = null;
+
+    public AIPlayer(string n, AIPlayerProperties prop, HandUI handVisualizer = null) : base(n)
     {
         properties = prop;
+        debug_visibleHand = handVisualizer;
     }
 
     public AIPlayer(AIPlayerData data) : base(data.name)
@@ -47,6 +50,7 @@ public class AIPlayer : Player
 
     IEnumerator TakeDelayedTurn(bool isLastTurn)
     {
+        Debug.Log("=============================================");
         Debug.Log($"Starting {Name}'s turn!");
 
         var currentTime = Time.time;
@@ -103,9 +107,32 @@ public class AIPlayer : Player
             VisualizeCardDiscarded(discard);
         }
 
+        Debug.Log("=============================================");
         yield return null;
         GameManager.I.NextTurn();
     }
+
+    #region Debug - Hand Visualization
+    protected override void VisualizeCardDrawn(Card card, bool discard)
+    {
+        base.VisualizeCardDrawn(card, discard);
+
+        if (debug_visibleHand)
+        {
+            debug_visibleHand.AddCard(card);
+        }
+    }
+
+    protected override void VisualizeCardDiscarded(Card card)
+    {
+        base.VisualizeCardDiscarded(card);
+
+        if (debug_visibleHand)
+        {
+            debug_visibleHand.RemoveCard(card);
+        }
+    }
+    #endregion
 
     #region AI Helpers
 

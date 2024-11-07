@@ -1,4 +1,5 @@
 using BeauRoutine;
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
@@ -6,6 +7,9 @@ using UnityEngine;
 public class GameManager : MonoBehaviour
 {
     public static GameManager I;
+
+    public static Action RoundEnd;
+    public static Action RoundBegin;
 
     [SerializeField]
     List<Player> players = new List<Player>();
@@ -36,7 +40,8 @@ public class GameManager : MonoBehaviour
         I = this;
     }
 
-    public void InitializeAIGame(List<AIPlayerData> aiPlayers, int StartTurn = FirstRound)   // todo: aiProps should be a setting
+    public void InitializeAIGame(List<AIPlayerData> aiPlayers, int StartTurn = FirstRound, List<HandUI> visualizers = null)   
+        // todo: aiProps should be a setting
     {
         // validate player count:
         if (aiPlayers.Count < 1 || aiPlayers.Count > 5)
@@ -46,14 +51,25 @@ public class GameManager : MonoBehaviour
         }
 
         players = new List<Player>();
-        for (int i = 0; i < aiPlayers.Count; i++)
+
+        if (visualizers != null && visualizers.Count == aiPlayers.Count)
         {
-            players.Add(new AIPlayer(aiPlayers[i]));
+            for (int i = 0; i < aiPlayers.Count; i++)
+            {
+                players.Add(new AIPlayer(aiPlayers[i].name, aiPlayers[i].properties, visualizers[i]));
+            }
+        }
+        else
+        {
+            for (int i = 0; i < aiPlayers.Count; i++)
+            {
+                players.Add(new AIPlayer(aiPlayers[i]));
+            }
         }
 
         // set values:
         currentRound = StartTurn;
-        playerTurn = startingPlayer = Random.Range(0, players.Count);
+        playerTurn = startingPlayer = UnityEngine.Random.Range(0, players.Count);
         outPlayer = -1;
 
         // start round!
@@ -79,7 +95,7 @@ public class GameManager : MonoBehaviour
 
         // set values:
         currentRound = FirstRound;
-        playerTurn = startingPlayer = Random.Range(0, players.Count);
+        playerTurn = startingPlayer = UnityEngine.Random.Range(0, players.Count);
         outPlayer = -1;
 
         // start round!
@@ -88,8 +104,18 @@ public class GameManager : MonoBehaviour
 
     IEnumerator WaitToStartNewRound()
     {
+        // delay end here to see results
+        yield return 3F;
+
+        RoundEnd?.Invoke();
+        yield return null;
+
         yield return new WaitUntil(() => !isRoundRunning);
         yield return 1F;
+
+        RoundBegin?.Invoke();
+        yield return null;
+
         StartNewRound();
     }
 

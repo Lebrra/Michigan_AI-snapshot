@@ -27,6 +27,10 @@ public abstract class Player
     {
         hand.Clear();
         hand.AddRange(cards);
+        foreach (var card in cards)
+        {
+            VisualizeCardDrawn(card, false);
+        }
     }
 
     public void AddCardToEnd(Card card)
@@ -69,7 +73,7 @@ public abstract class Player
 
     public virtual void TakeTurn(bool isLastTurn) { }
 
-    protected void VisualizeCardDrawn(Card card, bool discard)    // todo: should this be a location instead?
+    protected virtual void VisualizeCardDrawn(Card card, bool discard)    // todo: should this be a location instead?
     {
         if (discard) Debug.Log($"{name} has drawn {card} from the discard pile!");
         else Debug.Log($"{name} has drawn {card} from the deck!");
@@ -86,12 +90,12 @@ public abstract class Player
         Debug.Log($"{name}'s current score after round {GameManager.I.WildValue} is {Score}");
     }
 
-    protected void VisualizeCardDiscarded(Card card)
+    protected virtual void VisualizeCardDiscarded(Card card)
     {
         Debug.Log($"{name} has discarded {card}!");
     }
 
-    protected void VisualizeFinalRoundPlay(List<CardBundle> bundles, List<List<Card>> bundlePlays, int points)
+    protected virtual void VisualizeFinalRoundPlay(List<CardBundle> bundles, List<List<Card>> bundlePlays, int points)
     {
         Debug.Log($"{name} played their final round turn and got a score of {points}");
 
