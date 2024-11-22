@@ -63,7 +63,7 @@ public abstract class Player
             // remove card
             hand.RemoveAt(found);
         }
-        else Debug.LogError($"Tried to remove {card} but failed!");
+        else TextDebugger.Error($"Tried to remove {card} but failed!");
     }
 
     public void AddToScore(int adder)    // may be handled internally
@@ -75,36 +75,36 @@ public abstract class Player
 
     protected virtual void VisualizeCardDrawn(Card card, bool discard)    // todo: should this be a location instead?
     {
-        if (discard) Debug.Log($"{name} has drawn {card} from the discard pile!");
-        else Debug.Log($"{name} has drawn {card} from the deck!");
+        if (discard) TextDebugger.Log($"{name} has drawn {card} from the discard pile!");
+        else TextDebugger.Log($"{name} has drawn {card} from the deck!");
     }
 
     protected void VisualizeFirstOut(List<CardBundle> bundles)
     {
-        Debug.LogWarning($"{name} has gone out!");
-        Debug.Log($"{name} has played...");
+        TextDebugger.Alert($"{name} has gone out!");
+        TextDebugger.Log($"{name} has played...");
 
         foreach (var bundle in bundles)
-            Debug.Log(bundle.ToString());
+            TextDebugger.Log(bundle.ToString());
 
-        Debug.Log($"{name}'s current score after round {GameManager.I.WildValue} is {Score}");
+        TextDebugger.Log($"{name}'s current score after round {GameManager.I.WildValue} is {Score}");
     }
 
     protected virtual void VisualizeCardDiscarded(Card card)
     {
-        Debug.Log($"{name} has discarded {card}!");
+        TextDebugger.Log($"{name} has discarded {card}!");
     }
 
     protected virtual void VisualizeFinalRoundPlay(List<CardBundle> bundles, List<List<Card>> bundlePlays, int points)
     {
-        Debug.Log($"{name} played their final round turn and got a score of {points}");
+        TextDebugger.Log($"{name} played their final round turn and got a score of {points}");
 
         if (bundles.Count > 0 || bundlePlays.Count > 0)
         {
-            Debug.Log($"{name} was able to play...");
+            TextDebugger.Log($"{name} was able to play...");
 
             foreach (var bundle in bundles)
-                Debug.Log(bundle.ToString());
+                TextDebugger.Log(bundle.ToString());
 
             for (int i = 0; i < bundlePlays.Count; i++)
             {
@@ -119,12 +119,12 @@ public abstract class Player
                         }
                     }
                     playString += bundlePlays[i][bundlePlays[i].Count - 1].ToString();
-                    Debug.Log(playString);
+                    TextDebugger.Log(playString);
                 }
             }
         }
 
-        Debug.Log($"{name}'s current score after round {GameManager.I.WildValue} is {Score}");
+        TextDebugger.Log($"{name}'s current score after round {GameManager.I.WildValue} is {Score}");
     }
 
     protected void PrintHand()
@@ -136,6 +136,6 @@ public abstract class Player
         }
         handString += hand[hand.Count - 1].ToString();
 
-        Debug.Log($"{name}'s current hand: {handString}");
+        TextDebugger.Log($"{name}'s current hand: {handString}");
     }
 }

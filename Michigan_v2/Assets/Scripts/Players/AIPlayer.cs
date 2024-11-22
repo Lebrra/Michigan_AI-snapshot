@@ -45,13 +45,13 @@ public class AIPlayer : Player
         {
             turn.Replace(TakeDelayedTurn(isLastTurn));
         }
-        else Debug.LogError($"Error starting {Name}'s turn, why is it still running?");
+        else TextDebugger.Error($"Error starting {Name}'s turn, why is it still running?");
     }
 
     IEnumerator TakeDelayedTurn(bool isLastTurn)
     {
-        Debug.Log("=============================================");
-        Debug.Log($"Starting {Name}'s turn!");
+        TextDebugger.Log("=============================================");
+        TextDebugger.Log($"Starting {Name}'s turn!");
 
         var currentTime = Time.time;
         
@@ -107,7 +107,7 @@ public class AIPlayer : Player
             VisualizeCardDiscarded(discard);
         }
 
-        Debug.Log("=============================================");
+        TextDebugger.Log("=============================================");
         yield return null;
         GameManager.I.NextTurn();
     }

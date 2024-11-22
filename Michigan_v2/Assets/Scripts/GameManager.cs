@@ -67,6 +67,8 @@ public class GameManager : MonoBehaviour
             }
         }
 
+        TextDebugger.Clear();
+
         // set values:
         currentRound = StartTurn;
         playerTurn = startingPlayer = UnityEngine.Random.Range(0, players.Count);
@@ -81,7 +83,7 @@ public class GameManager : MonoBehaviour
         // validate player count:
         if (aiPlayers.Count < 1 || aiPlayers.Count > 5)
         {
-            Debug.LogError("Invalid player count; cannot start game!");
+            TextDebugger.Error("Invalid player count; cannot start game!");
             return;
         }
 
@@ -135,7 +137,7 @@ public class GameManager : MonoBehaviour
             player.NewHand(currentDeck.DrawNewHand(currentRound));
         }
 
-        Debug.LogWarning($"[GameManager] STARTING ROUND {Utilities.ValueToString(WildValue)}");
+        TextDebugger.Warn($"[GameManager] STARTING ROUND {Utilities.ValueToString(WildValue)}");
         isRoundRunning = true;
         // start turn order !
         players[playerTurn].TakeTurn(false);
@@ -143,7 +145,7 @@ public class GameManager : MonoBehaviour
 
     void EndRound()
     {
-        Debug.LogWarning($"[GameManager] COMPLETED ROUND {Utilities.ValueToString(WildValue)}");
+        TextDebugger.Warn($"[GameManager] COMPLETED ROUND {Utilities.ValueToString(WildValue)}");
         isRoundRunning = false;
 
         if (currentRound == LastRound)
