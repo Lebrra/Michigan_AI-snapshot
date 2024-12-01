@@ -280,7 +280,7 @@ MonoBehaviour:
     properties: {fileID: 11400000, guid: 5dbe6eaeb9315c543b6503849d36d931, type: 2}
   - name: ai 2
     properties: {fileID: 11400000, guid: 5dbe6eaeb9315c543b6503849d36d931, type: 2}
-  turnStartOverride: 12
+  turnStartOverride: 3
   roundOverBanner: {fileID: 1698475538}
   handVisualizers: []
 --- !u!114 &829801695
@@ -599,8 +599,8 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 0}
   m_AnchorMax: {x: 0, y: 1}
-  m_AnchoredPosition: {x: 0, y: 0}
-  m_SizeDelta: {x: 281, y: 0}
+  m_AnchoredPosition: {x: 0, y: -25000}
+  m_SizeDelta: {x: 281, y: 50000}
   m_Pivot: {x: 0, y: 0.5}
 --- !u!114 &1010539213
 MonoBehaviour:
@@ -629,7 +629,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   m_Material: {fileID: 0}
-  m_Color: {r: 0.6792453, g: 0.6792453, b: 0.6792453, a: 1}
+  m_Color: {r: 0.06132078, g: 0.06132078, b: 0.06132078, a: 1}
   m_RaycastTarget: 1
   m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
   m_Maskable: 1
@@ -720,8 +720,8 @@ MonoBehaviour:
   m_fontMaterials: []
   m_fontColor32:
     serializedVersion: 2
-    rgba: 4281216559
-  m_fontColor: {r: 0.18396229, g: 0.18135905, b: 0.18135905, a: 1}
+    rgba: 4291348680
+  m_fontColor: {r: 0.7830189, g: 0.7830189, b: 0.7830189, a: 1}
   m_enableVertexGradient: 0
   m_colorMode: 3
   m_fontColorGradient:

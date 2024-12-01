@@ -57,7 +57,8 @@ public class AIPlayer : Player
         
         var _ = DrawCard();
 
-        yield return new WaitForSeconds(Mathf.Clamp(properties.DrawDelay - (Time.time - currentTime), 0F, properties.DrawDelay));
+        var timeToWait = properties.DrawDelay - (Time.time - currentTime);
+        if (timeToWait > 0) yield return new WaitForSeconds(timeToWait);
 
         PrintHand();
         yield return null;
@@ -71,7 +72,8 @@ public class AIPlayer : Player
             var discard = AI.GetLastTurnDiscard(leftovers);
             RemoveCard(discard);
 
-            yield return new WaitForSeconds(Mathf.Clamp(properties.DiscardDelay - (Time.time - currentTime), 0F, properties.DiscardDelay));
+            timeToWait = properties.DiscardDelay - (Time.time - currentTime);
+            if (timeToWait > 0) yield return new WaitForSeconds(timeToWait);
 
             leftovers.Remove(discard);
             var score = AI.GetScore(leftovers);
@@ -90,7 +92,8 @@ public class AIPlayer : Player
             AI.FindBestPlay(hand, GameManager.I.WildValue, out var bundles, out var leftovers);
             var discard = AI.FindBestDiscard(leftovers);
 
-            yield return new WaitForSeconds(Mathf.Clamp(properties.DiscardDelay - (Time.time - currentTime), 0F, properties.DiscardDelay));
+            timeToWait = properties.DiscardDelay - (Time.time - currentTime);
+            if (timeToWait > 0) yield return new WaitForSeconds(timeToWait);
 
             RemoveCard(discard);
 

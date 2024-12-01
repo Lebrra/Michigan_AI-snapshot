@@ -5,8 +5,12 @@ using UnityEngine;
 
 public static class AI
 {
+    const int MAX_LOOPS = 1000;
+
     public static void FindBestPlay(List<Card> hand, int wildValue, out List<CardBundle> bundles, out List<Card> leftovers)
     {
+        Debug.Log("~~ FINDING BEST PLAY ~~");
+
         // first: find all bundle possibilities
         // second: find a combination resulting in the least amount of leftover points
 
@@ -159,6 +163,8 @@ public static class AI
 
     public static void FindBestPlay(List<Card> hand, int wildValue, List<CardBundle> playableBundles, out List<CardBundle> bundles, out List<Card> leftovers, out List<List<Card>> bundlePlaysPerBundle)
     {
+        Debug.Log("~~ FINDING BEST PLAY WITH BUNDLES ~~");
+
         // todo:
         // 1st - try FindBestPlay ignoring playableBundles
         // 2nd - generate a List<List<Card>> of cards that could be played on playableBundles (if one card can be played, can multiple? (runs))
@@ -463,6 +469,9 @@ public static class AI
 
         if (leftovers.Count < 2) return leftovers.LastOrDefault();
 
+        // infinite loop stopper
+        int moderator = 0;
+
         // with the leftover cards, we want to find any cards that may lead to bundles
 
         // possibleSets = values that have more than one instance in hand - note this has to be 2 instances or it would have been a bundle
@@ -479,7 +488,15 @@ public static class AI
                 possibleSets.Add(card.value);
                 cardIterations = cardIterations.Where(c => c.value != card.value).ToList();
             }
+
+            moderator++;
+            if (moderator >= MAX_LOOPS)
+            {
+                TextDebugger.Error("Maxed out iterations!");
+                Debug.Break();
+            }
         }
+        moderator = 0;
 
         // assumptions: 
         //  - strong runs are exclusively groups of 2 (if they were 3+ then they would have already been a valid bundle)
@@ -508,7 +525,15 @@ public static class AI
             }
 
             if (partialRun.Count > 1) strongPartialRuns.Add(partialRun);
+
+            moderator++;
+            if (moderator >= MAX_LOOPS)
+            {
+                TextDebugger.Error("Maxed out iterations!");
+                Debug.Break();
+            }
         }
+        moderator = 0;
 
         // weak = there is a gap between cards
         // note we can't assume a card is only in one pair here
@@ -534,6 +559,13 @@ public static class AI
                 List<Card> partialRun = new List<Card> { card };
                 partialRun.Add(maxCard);
                 weakPartialRuns.Add(partialRun);
+            }
+
+            moderator++;
+            if (moderator >= MAX_LOOPS)
+            {
+                TextDebugger.Error("Maxed out iterations!");
+                Debug.Break();
             }
         }
         weakPartialRuns = weakPartialRuns.Distinct().ToList();
@@ -639,5 +671,10 @@ public static class AI
 
         // are we still here? just pick one then (it will be a pair)
         return leftovers.OrderBy(c => c.value).LastOrDefault();
+    }
+
+    public static Card PickRandomDiscard(List<Card> leftovers)
+    {
+        return leftovers[Random.Range(0, leftovers.Count)];
     }
 }
