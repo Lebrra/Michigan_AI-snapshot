@@ -106,6 +106,7 @@ public class TextDebugger : MonoBehaviour
             writeQueue.Add(new Message { message = inMsg });
             if (!writer.Exists()) writer.Replace(WriteQueue());
         }
+        else Debug.Log(inMsg);
     }
 
     public static void Warn(string inMsg)
@@ -115,6 +116,7 @@ public class TextDebugger : MonoBehaviour
             writeQueue.Add(new Message { message = inMsg, messageType = MessageType.Warn });
             if (!writer.Exists()) writer.Replace(WriteQueue());
         }
+        else Debug.LogWarning(inMsg);
     }
 
     public static void Error(string inMsg)
@@ -124,6 +126,7 @@ public class TextDebugger : MonoBehaviour
             writeQueue.Add(new Message { message = inMsg, messageType = MessageType.Error });
             if (!writer.Exists()) writer.Replace(WriteQueue());
         }
+        else Debug.LogError(inMsg);
     }
 
     public static void Alert(string inMsg)
@@ -133,5 +136,6 @@ public class TextDebugger : MonoBehaviour
             writeQueue.Add(new Message { message = inMsg, messageType = MessageType.Alert });
             if (!writer.Exists()) writer.Replace(WriteQueue());
         }
+        else Debug.Log("** " + inMsg + " **");
     }
 }

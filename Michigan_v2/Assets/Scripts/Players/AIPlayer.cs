@@ -15,13 +15,15 @@ public class AIPlayer : Player
 {
     AIPlayerProperties properties;
 
-    int currentHandScore = int.MaxValue;
-
-    Card lastDiscard = new Card();
-
     Routine turn;
 
     HandUI debug_visibleHand = null;
+
+    // reuse data objects:
+    Card lastDiscard = new Card();
+    List<CardBundle> turnBundles = new List<CardBundle>();
+    List<Card> turnLeftovers = new List<Card>();
+    int turnScore = int.MaxValue;
 
     public AIPlayer(string n, AIPlayerProperties prop, HandUI handVisualizer = null) : base(n)
     {
@@ -57,8 +59,7 @@ public class AIPlayer : Player
         
         var _ = DrawCard();
 
-        var timeToWait = properties.DrawDelay - (Time.time - currentTime);
-        if (timeToWait > 0) yield return new WaitForSeconds(timeToWait);
+        yield return new WaitForSeconds(Mathf.Clamp(properties.DrawDelay - (Time.time - currentTime), 0F, properties.DrawDelay));
 
         PrintHand();
         yield return null;
@@ -68,46 +69,50 @@ public class AIPlayer : Player
         // get best play:
         if (isLastTurn)
         {
-            AI.FindBestPlay(hand, GameManager.I.WildValue, GameManager.I.OutBundles, out var bundles, out var leftovers, out var bundlePlays);
-            var discard = AI.GetLastTurnDiscard(leftovers);
-            RemoveCard(discard);
+            AI.FindBestPlay(hand, GameManager.I.WildValue, GameManager.I.OutBundles, out turnBundles, out turnLeftovers, out var bundlePlays);
+            lastDiscard = AI.GetLastTurnDiscard(turnLeftovers);
+            RemoveCard(lastDiscard);
 
-            timeToWait = properties.DiscardDelay - (Time.time - currentTime);
-            if (timeToWait > 0) yield return new WaitForSeconds(timeToWait);
+            yield return new WaitForSeconds(Mathf.Clamp(properties.DiscardDelay - (Time.time - currentTime), 0F, properties.DiscardDelay));
 
-            leftovers.Remove(discard);
-            var score = AI.GetScore(leftovers);
-            AddToScore(score);
-            VisualizeFinalRoundPlay(bundles, bundlePlays, score);
+            turnLeftovers.Remove(lastDiscard);
+            turnScore = AI.GetScore(turnLeftovers);
+            AddToScore(turnScore);
+            VisualizeFinalRoundPlay(turnBundles, bundlePlays, turnScore);
             GameManager.I.UpdateOutBundles(bundlePlays);
             yield return null;
 
-            lastDiscard = discard;
-            GameManager.I.Deck.Discard(discard);
+            GameManager.I.Deck.Discard(lastDiscard);
             yield return null;
-            VisualizeCardDiscarded(discard);
+            VisualizeCardDiscarded(lastDiscard);
+
+            yield return null;
+
+            // clear turn values:
+            lastDiscard = default;
+            turnBundles.Clear();
+            turnLeftovers.Clear();
+            turnScore = int.MaxValue;
         }
         else
         {
-            AI.FindBestPlay(hand, GameManager.I.WildValue, out var bundles, out var leftovers);
-            var discard = AI.FindBestDiscard(leftovers);
+            AI.FindBestPlay(hand, GameManager.I.WildValue, out turnBundles, out turnLeftovers);
+            lastDiscard = AI.FindBestDiscardImproved(turnLeftovers);
 
-            timeToWait = properties.DiscardDelay - (Time.time - currentTime);
-            if (timeToWait > 0) yield return new WaitForSeconds(timeToWait);
+            yield return new WaitForSeconds(Mathf.Clamp(properties.DiscardDelay - (Time.time - currentTime), 0F, properties.DiscardDelay));
 
-            RemoveCard(discard);
+            RemoveCard(lastDiscard);
 
-            if (leftovers.Count == 1)
+            if (turnLeftovers.Count == 1)
             {
                 AddToScore(0);
-                GameManager.I.SetPlayerOut(bundles);
-                VisualizeFirstOut(bundles);
+                GameManager.I.SetPlayerOut(turnBundles);
+                VisualizeFirstOut(turnBundles);
             }
 
-            lastDiscard = discard;
-            GameManager.I.Deck.Discard(discard);
+            GameManager.I.Deck.Discard(lastDiscard);
             yield return null;
-            VisualizeCardDiscarded(discard);
+            VisualizeCardDiscarded(lastDiscard);
         }
 
         TextDebugger.Log("=============================================");
@@ -148,18 +153,19 @@ public class AIPlayer : Player
             case AIDifficulty.Medium:
             case AIDifficulty.Hard:
                 // determine if hand would be better with discard:
-                var cardsIncludingDiscard = new List<Card> { GameManager.I.Deck.TopOfDiscard };
-                AI.FindBestPlay(cardsIncludingDiscard, GameManager.I.WildValue, out var bundles, out var leftovers);
+                var cardsIncludingDiscard = hand.Copy();
+                cardsIncludingDiscard.Add(GameManager.I.Deck.TopOfDiscard);
+                AI.FindBestPlay(cardsIncludingDiscard, GameManager.I.WildValue, out var _, out var leftovers);
 
                 var discard = leftovers.OrderBy(b => b.value).Last();
                 leftovers.Remove(discard);
 
                 int scoreWithDiscard = AI.GetScore(leftovers);
 
-                if (scoreWithDiscard < currentHandScore)
+                if (scoreWithDiscard < turnScore)
                 {
                     drawFromDiscard = true;
-                    currentHandScore = scoreWithDiscard;
+                    turnScore = scoreWithDiscard;
                 }
                 else drawFromDiscard = false;
 

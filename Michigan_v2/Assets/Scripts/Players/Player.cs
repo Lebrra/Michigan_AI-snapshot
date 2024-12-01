@@ -129,13 +129,17 @@ public abstract class Player
 
     protected void PrintHand()
     {
-        string handString = "";
-        for(int i = 0; i < hand.Count - 1; i++)
+        if (hand.Count > 0)
         {
-            handString += hand[i].ToString() + ", ";
-        }
-        handString += hand[hand.Count - 1].ToString();
+            string handString = "";
+            for (int i = 0; i < hand.Count - 1; i++)
+            {
+                handString += hand[i].ToString() + ", ";
+            }
+            handString += hand[hand.Count - 1].ToString();
 
-        TextDebugger.Log($"{name}'s current hand: {handString}");
+            TextDebugger.Log($"{name}'s current hand: {handString}");
+        }
+        else TextDebugger.Error($"Error printing {name}'s hand!");
     }
 }

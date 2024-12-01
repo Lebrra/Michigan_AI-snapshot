@@ -40,7 +40,7 @@ public class GameManager : MonoBehaviour
         I = this;
     }
 
-    public void InitializeAIGame(List<AIPlayerData> aiPlayers, int StartTurn = FirstRound, List<HandUI> visualizers = null)   
+    public void InitializeAIGame(List<AIPlayerData> aiPlayers, int StartTurn = FirstRound)   
         // todo: aiProps should be a setting
     {
         // validate player count:
@@ -52,19 +52,9 @@ public class GameManager : MonoBehaviour
 
         players = new List<Player>();
 
-        if (visualizers != null && visualizers.Count == aiPlayers.Count)
+        for (int i = 0; i < aiPlayers.Count; i++)
         {
-            for (int i = 0; i < aiPlayers.Count; i++)
-            {
-                players.Add(new AIPlayer(aiPlayers[i].name, aiPlayers[i].properties, visualizers[i]));
-            }
-        }
-        else
-        {
-            for (int i = 0; i < aiPlayers.Count; i++)
-            {
-                players.Add(new AIPlayer(aiPlayers[i]));
-            }
+            players.Add(new AIPlayer(aiPlayers[i]));
         }
 
         TextDebugger.Clear();

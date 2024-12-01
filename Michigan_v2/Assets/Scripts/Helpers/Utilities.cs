@@ -5,7 +5,7 @@ using System.Linq;
 
 public static class Utilities
 {
-    public static Suit[] SuitsList = new Suit[4] { Suit.Spades, Suit.Hearts, Suit.Clubs, Suit.Diamonds };
+    public static readonly Suit[] SuitsList = new Suit[4] { Suit.Spades, Suit.Hearts, Suit.Clubs, Suit.Diamonds };
 
     public static string ValueToString(int value)
     {
@@ -287,7 +287,7 @@ public static class Utilities
 
                 // get start and end values:
                 int start = remaining[0].value;
-                int end = start + remaining.Count;
+                int end = start + remaining.Count - 1;
 
                 // are there any wilds left? if so, randomly place them at the beginning or end (if valid!)
                 while (wilds.Count > 0)

@@ -673,6 +673,122 @@ public static class AI
         return leftovers.OrderBy(c => c.value).LastOrDefault();
     }
 
+    public static Card FindBestDiscardImproved(List<Card> leftovers)
+    {
+        // first remove wilds; don't discard these
+        leftovers = leftovers.Where(c => c.value > 0).ToList();
+
+        if (leftovers.Count < 2) return leftovers.LastOrDefault();
+
+        // order so its nice:
+        leftovers = leftovers.OrderBy(c => c.value).ToList();
+
+        // now to assign every card ranking based off this:
+        /*
+         * 1 = having all 3 properties
+         * 2 = possible set & strong run
+         * 3 = possible set & weak run
+         * 4 = strong & weak run
+         * 5 = possible set
+         * 6 = strong run
+         * 7 = weak run
+         * 8 = none
+         */
+        // and discard the lowest ranked card in this list
+
+        // to do this, points will be assigned by 
+        /*
+         * +6 for possible set
+         * +4 for strong run
+         * +3 for weak run
+         */
+        // the least pointed card (with highest value if tie) will be discarded
+
+        int[] rankings = new int[leftovers.Count];
+        for (int i = 0; i < rankings.Length; i++) rankings[i] = 0;
+
+        // possible sets:
+        for (int i = 0; i < leftovers.Count - 1; i++)
+        {
+            if (leftovers[i].value == leftovers[i + 1].value)
+            {
+                // possible set found
+                rankings[i] += 6;
+                rankings[i + 1] += 6;
+            }
+        }
+
+        // strong runs:
+        for (int i = 0; i < leftovers.Count - 1; i++)
+        {
+            for (int j = i+1; j < leftovers.Count; j++)
+            {
+                // test value first to see if we are ready to break this loop
+                if (leftovers[j].value <= leftovers[i].value + 1)
+                {
+                    // now test exact 
+                    if (leftovers[i].value + 1 == leftovers[j].value && leftovers[i].suit == leftovers[j].suit)
+                    {
+                        // strong run found
+                        rankings[i] += 4;
+                        rankings[i + 1] += 4;
+                        break;
+                    }
+                    // else keep looking
+                }
+                // stop looking through j loop
+                else break;
+            }
+        }
+
+        // weak runs:
+        for (int i = 0; i < leftovers.Count - 1; i++)
+        {
+            for (int j = i + 1; j < leftovers.Count; j++)
+            {
+                // test value first to see if we are ready to break this loop
+                if (leftovers[j].value <= leftovers[i].value + 2)
+                {
+                    // now test exact 
+                    if (leftovers[i].value + 2 == leftovers[j].value && leftovers[i].suit == leftovers[j].suit)
+                    {
+                        // strong run found
+                        rankings[i] += 3;
+                        rankings[i + 1] += 3;
+                        break;
+                    }
+                    // else keep looking
+                }
+                // stop looking through j loop
+                else break;
+            }
+        }
+
+        // now to get the results: (default to the first card)
+        int worstScore = rankings[0];
+        List<int> worstScoreIndices = new List<int> { 0 };
+        for (int i = 1; i < rankings.Length; i++)
+        {
+            if (rankings[i] < worstScore)
+            {
+                worstScore = rankings[i];
+                worstScoreIndices.Clear();
+                worstScoreIndices.Add(i);
+            }
+            else if (rankings[i] == worstScore)
+            {
+                worstScoreIndices.Add(i);
+            }
+        }
+
+        if (worstScoreIndices.Count > 1)
+        {
+            // take highest value among them -> the highest index since cards were sorted by value -> the last value since those were also always ordered
+            return leftovers[worstScoreIndices[worstScoreIndices.Count - 1]];
+        }
+        else return leftovers[worstScoreIndices[0]];
+    }
+
     public static Card PickRandomDiscard(List<Card> leftovers)
     {
         return leftovers[Random.Range(0, leftovers.Count)];
