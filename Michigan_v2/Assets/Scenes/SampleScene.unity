@@ -272,11 +272,15 @@ MonoBehaviour:
   testOutBundle3: []
   testOutBundle4: []
   testPlayers:
-  - name: AI Player 1
+  - name: Tom
     properties: {fileID: 11400000, guid: 5dbe6eaeb9315c543b6503849d36d931, type: 2}
-  - name: AI Player 2
+  - name: Austin
     properties: {fileID: 11400000, guid: 5dbe6eaeb9315c543b6503849d36d931, type: 2}
-  turnStartOverride: 3
+  - name: Adam
+    properties: {fileID: 11400000, guid: 5dbe6eaeb9315c543b6503849d36d931, type: 2}
+  - name: Tim
+    properties: {fileID: 11400000, guid: 5dbe6eaeb9315c543b6503849d36d931, type: 2}
+  turnStartOverride: 10
 --- !u!114 &829801695
 MonoBehaviour:
   m_ObjectHideFlags: 0

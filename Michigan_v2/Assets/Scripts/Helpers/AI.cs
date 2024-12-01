@@ -9,8 +9,6 @@ public static class AI
 
     public static void FindBestPlay(List<Card> hand, int wildValue, out List<CardBundle> bundles, out List<Card> leftovers)
     {
-        Debug.Log("~~ FINDING BEST PLAY ~~");
-
         // first: find all bundle possibilities
         // second: find a combination resulting in the least amount of leftover points
 
@@ -163,9 +161,6 @@ public static class AI
 
     public static void FindBestPlay(List<Card> hand, int wildValue, List<CardBundle> playableBundles, out List<CardBundle> bundles, out List<Card> leftovers, out List<List<Card>> bundlePlaysPerBundle)
     {
-        Debug.Log("~~ FINDING BEST PLAY WITH BUNDLES ~~");
-
-        // todo:
         // 1st - try FindBestPlay ignoring playableBundles
         // 2nd - generate a List<List<Card>> of cards that could be played on playableBundles (if one card can be played, can multiple? (runs))
         // 3rd - for each list of playable cards try FindBestPlay of remaining cards in hand
