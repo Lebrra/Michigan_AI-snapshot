@@ -44,7 +44,7 @@ public class GameManager : MonoBehaviour
         // todo: aiProps should be a setting
     {
         // validate player count:
-        if (aiPlayers.Count < 1 || aiPlayers.Count > 5)
+        if (aiPlayers.Count < 1 || aiPlayers.Count > 6)
         {
             Debug.LogError("Invalid player count; cannot start game!");
             return;
