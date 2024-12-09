@@ -50,7 +50,9 @@ public class TextDebugger : MonoBehaviour
             string current = instance.outputField.text;
             current += FormatString(up.message, up.messageType);
             instance.outputField.text = System.Text.RegularExpressions.Regex.Unescape(current);
+#if UNITY_EDITOR
             GUIUtility.systemCopyBuffer = instance.outputField.text;
+#endif
 
             yield return null;
         }

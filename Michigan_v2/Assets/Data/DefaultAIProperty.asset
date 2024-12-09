@@ -12,6 +12,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 8f32d4000ff73dd4b8e0cdc88ef3161a, type: 3}
   m_Name: DefaultAIProperty
   m_EditorClassIdentifier: 
-  drawDelay: 2
-  discardDelay: 2
+  drawDelay: 0.5
+  discardDelay: 0.5
   defaultDifficulty: 0
