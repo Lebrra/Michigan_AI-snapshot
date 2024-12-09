@@ -56,10 +56,13 @@ public class AIPlayer : Player
         TextDebugger.Log($"Starting {Name}'s turn!");
 
         var currentTime = Time.time;
+        var startTime = currentTime;
         
         var _ = DrawCard();
 
-        yield return new WaitForSeconds(Mathf.Clamp(properties.DrawDelay - (Time.time - currentTime), 0F, properties.DrawDelay));
+        if (properties.DrawDelay > 0F)
+            yield return new WaitForSeconds(Mathf.Clamp(properties.DrawDelay - (Time.time - currentTime), 0F, properties.DrawDelay));
+        else yield return null;
 
         PrintHand();
         yield return null;
@@ -73,7 +76,9 @@ public class AIPlayer : Player
             lastDiscard = AI.GetLastTurnDiscard(turnLeftovers);
             RemoveCard(lastDiscard);
 
-            yield return new WaitForSeconds(Mathf.Clamp(properties.DiscardDelay - (Time.time - currentTime), 0F, properties.DiscardDelay));
+            if (properties.DiscardDelay > 0F)
+                yield return new WaitForSeconds(Mathf.Clamp(properties.DiscardDelay - (Time.time - currentTime), 0F, properties.DiscardDelay));
+            else yield return null;
 
             turnLeftovers.Remove(lastDiscard);
             turnScore = AI.GetScore(turnLeftovers);
@@ -99,7 +104,9 @@ public class AIPlayer : Player
             AI.FindBestPlay(hand, GameManager.I.WildValue, out turnBundles, out turnLeftovers);
             lastDiscard = AI.FindBestDiscardImproved(turnLeftovers);
 
-            yield return new WaitForSeconds(Mathf.Clamp(properties.DiscardDelay - (Time.time - currentTime), 0F, properties.DiscardDelay));
+            if (properties.DiscardDelay > 0F)
+                yield return new WaitForSeconds(Mathf.Clamp(properties.DiscardDelay - (Time.time - currentTime), 0F, properties.DiscardDelay));
+            else yield return null;
 
             RemoveCard(lastDiscard);
 
@@ -114,6 +121,11 @@ public class AIPlayer : Player
             yield return null;
             VisualizeCardDiscarded(lastDiscard);
         }
+
+        var turnTime = Mathf.Round((Time.time - startTime) * 1000F);
+        TextDebugger.Log($"Turn duration: {turnTime}ms");
+        turnTime -= (properties.DiscardDelay + properties.DrawDelay) * 1000F;
+        TextDebugger.Log($"Turn duration excluding forced delays: {turnTime}ms");
 
         TextDebugger.Log("=============================================");
         yield return null;
