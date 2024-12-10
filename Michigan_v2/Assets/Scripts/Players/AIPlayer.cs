@@ -309,9 +309,9 @@ public class AIPlayer : Player
         }
 
         var turnTime = Mathf.Round((Time.time - startTime) * 1000F);
-        TextDebugger.Log($"Turn duration: {turnTime}ms");
+        //TextDebugger.Log($"Turn duration: {turnTime}ms");
         turnTime -= (properties.DiscardDelay + properties.DrawDelay) * 1000F;
-        Debug.Log($"Turn duration excluding forced delays: {turnTime}ms");
+        TextDebugger.Log($"Turn duration excluding forced delays: {turnTime}ms");
 
         TextDebugger.Log("=============================================");
         yield return null;

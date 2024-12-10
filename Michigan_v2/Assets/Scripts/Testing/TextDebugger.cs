@@ -67,21 +67,29 @@ public class TextDebugger : MonoBehaviour
             case MessageType.Alert:
                 if (instance?.richText ?? false) output = $"<color {alertColor}>{inMsg}</color>";
                 else output = $"** {inMsg} **";
+#if UNITY_EDITOR
                 Debug.Log(inMsg);
+#endif
                 break;
             case MessageType.Warn:
                 if (instance?.richText ?? false) output = $"<color {warnColor}>{inMsg}</color>";
                 else output = $"// {inMsg} //";
+#if UNITY_EDITOR
                 Debug.LogWarning(inMsg);
+#endif
                 break;
             case MessageType.Error:
                 if (instance?.richText ?? false) output = $"<color {errorColor}>{inMsg}</color>";
                 else output = $"!! {inMsg} !!";
+#if UNITY_EDITOR
                 Debug.LogError(inMsg);
+#endif
                 break;
             default:
                 output = inMsg;
+#if UNITY_EDITOR
                 Debug.Log(inMsg);
+#endif
                 break;
         }
 
