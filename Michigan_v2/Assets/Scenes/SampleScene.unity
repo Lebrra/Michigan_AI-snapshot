@@ -362,8 +362,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f3e89b6747906274ebcf2a5a3350fc89, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  outputField: {fileID: 1229230258}
-  richText: 0
+  outputField: {fileID: 0}
+  richText: 1
 --- !u!114 &1010539214
 MonoBehaviour:
   m_ObjectHideFlags: 0

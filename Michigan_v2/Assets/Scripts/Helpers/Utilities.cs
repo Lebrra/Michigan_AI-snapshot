@@ -13,7 +13,7 @@ public static class Utilities
         {
             return value.ToString();
         }
-        else 
+        else
         {
             switch (value)
             {
@@ -106,6 +106,49 @@ public static class Utilities
         return $"{bundle.BundleType}: [{cardList}]";
     }
 
+
+    /// <summary>
+    /// Only verifies if a bundle group can go out on its own
+    /// </summary>
+    public static bool CanBundleGroupGoOut(this ValidBundleGroup group)
+    {
+        // if the correct amount of cards are all used, then we can go out!
+        if (group.cards.Count == GameManager.I.WildValue) return true;
+        if (group.cards.Count == GameManager.I.WildValue + 1)
+        {
+            // this means all cards (including discard) are used in bundles, which is okay as long as one of the bundles can lose a card and remain valid
+            // (although a configuration without using the discard should also exist if this one does)
+            return group.bundles.Any(b => b.Cards.Count > 3);
+        }
+        return false;
+    }
+
+    public static Card GetGroupDiscard(this ValidBundleGroup group)
+    {
+        if (group.CanBundleGroupGoOut())
+        {
+            if (group.unusedCards.Count == 1) return group.unusedCards[0];
+            else if (group.unusedCards.Count > 1)
+            {
+                TextDebugger.Error("Found a bundle group that claims it can go out but has more than one unused card!");
+                return AI.FindBestDiscardImproved(group.unusedCards);
+            }
+            else
+            {
+                // all cards are in bundles, so discard one from a bundle of more than 3 cards
+                var bund = group.bundles.Where(b => b.Cards.Count > 3).First();
+                var discard = bund.RemoveOneCard();
+                group.cards.Remove(discard);
+                group.unusedCards.Add(discard);
+                return discard;
+            }
+        }
+        else
+        {
+            return AI.FindBestDiscardImproved(group.unusedCards);
+        }
+    }
+
     #endregion
 
     #region Deck Functions
@@ -156,13 +199,32 @@ public static class Utilities
         else return card.value;
     }
 
+    /// <summary>
+    /// Assumes discard is not in here
+    /// </summary>
+    /// <returns></returns>
+    public static int GetScore(List<Card> leftovers)    // todo: this should be in util not here
+    {
+        int score = 0;
+        for (int j = 0; j < leftovers.Count; j++)
+        {
+            score += Utilities.GetScoreValue(leftovers[j]);
+        }
+        return score;
+    }
+
+    public static bool IsWild(Card card, int wildValue = -5)
+    {
+        return card.value == 0 || card.value == wildValue;
+    }
+
     public static CardBundle TryCreateValidCardBundle(List<Card> cards, int wildValue, bool ignoreOrder = false)
     {
         // first let's see if there's enough cards:
         if (cards.Count < 3) return null;
 
         // pull out the wilds first:
-        var remaining = cards.Where(c => c.value != 0 && c.value != wildValue).ToList();
+        var remaining = cards.Where(c => !IsWild(c, wildValue)).ToList();
 
         if (remaining.Count == 0)
         {
@@ -211,7 +273,7 @@ public static class Utilities
                 // skip the first card but we still need to reference it later
                 if (remaining.IndexOf(card) == 0) continue;
 
-                if (card.value == wildValue || card.value == 0 || (card.value == end + 1 && runSuit == card.suit))
+                if (IsWild(card, wildValue) || (card.value == end + 1 && runSuit == card.suit))
                 {
                     end++;
                     continue;
@@ -236,7 +298,7 @@ public static class Utilities
         {
             // this is an AI asking -> we don't care where the wilds end up and we can't assume order
             remaining = remaining.OrderBy(c => c.value).ToList();
-            var wilds = cards.Where(c => c.value == 0 || c.value == wildValue).ToList();
+            var wilds = cards.Where(c => IsWild(c, wildValue)).ToList();
 
             Suit runSuit = remaining[0].suit;
             int holes = 0;
@@ -271,9 +333,7 @@ public static class Utilities
                     for (int j = 1; j < remaining.Count; j++)
                     {
                         current++;
-                        if (remaining[j].value == wildValue ||
-                            remaining[j].value == 0 ||
-                            remaining[j].value == current) continue;
+                        if (IsWild(remaining[j], wildValue) || remaining[j].value == current) continue;
                         else
                         {
                             // hole found!
@@ -317,10 +377,38 @@ public static class Utilities
                 return new CardRun(remaining, new Card(start, runSuit), new Card(end, runSuit));
             }
         }
-        
+
 
         // not vaild!
         return null;
+    }
+
+    /// <summary>
+    /// Assumes that provided bundles have already been validated to exist together
+    /// </summary>
+    public static ValidBundleGroup CreateBundleGroup(List<Card> handCopy, params CardBundle[] bundles)
+    {
+        var usedCards = new List<Card>();
+
+        if (bundles.Length > 0)
+        {
+            foreach (var bundle in bundles)
+            {
+                foreach (var card in bundle.Cards)
+                {
+                    usedCards.Add(card);
+                    handCopy.Remove(card);
+                }
+            }
+        }
+
+        return new ValidBundleGroup
+        {
+            bundles = bundles.Length > 0 ? bundles.ToList() : new List<CardBundle>(),
+            cards = usedCards,
+            unusedCards = handCopy,
+            score = handCopy.Sum(c => GetScoreValue(c))
+        };
     }
 
     #endregion

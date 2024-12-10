@@ -23,7 +23,7 @@ public abstract class Player
         hand = new List<Card>();
     }
 
-    public void NewHand(List<Card> cards)
+    public virtual void NewHand(List<Card> cards)
     {
         hand.Clear();
         hand.AddRange(cards);
