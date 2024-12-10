@@ -142,8 +142,10 @@ public class CardRun : CardBundle
 
     public override bool CanAddCard(Card card, int wildValue)
     {
+        if (cards.Count >= 13) return false;
+
         // wilds:
-        if (card.value == wildValue || card.value == 0) return true;
+        if (Utilities.IsWild(card, wildValue)) return true;
 
         if (card.suit == minCard.suit)
         {
@@ -154,25 +156,12 @@ public class CardRun : CardBundle
 
     public override void AddCard(Card card)
     {
+        // if wild:
         if (card.value == 0 || (card.value != minCard.value - 1 && card.value != maxCard.value + 1))
         {
-            if (minCard.value == 1)
-            {
-                // there's only one place the wild can go, not a problem
-                cards.Add(card);
-                maxCard.value++;
-            }
-            else if (maxCard.value == 13)
-            {
-                // there's only one place the wild can go, not a problem
-                cards.Add(card);
-                minCard.value--;
-            }
-            else
-            {
-                Debug.Log("We are adding a wild card to a run! We need to ask where it should go");
-                // todo: handle this case
-            }
+            AddWild(card, maxCard.value < 13);
+            // todo: if player, they get to decide where wild goes
+            // assumes that AI will already know if trying to put a wild here and will use AddWild() instead
         }
         else
         {
@@ -190,6 +179,24 @@ public class CardRun : CardBundle
                 Debug.LogError("Error adding a card to a run!");
             }
         }
+    }
+
+    // assumes card is wild
+    public bool AddWild(Card card, bool toEnd)
+    {
+        if (!toEnd && minCard.value > 1)
+        {
+            cards.Add(card);
+            minCard.value--;
+            return true;
+        }
+        else if (toEnd && maxCard.value < 13)
+        {
+            cards.Add(card);
+            maxCard.value++;
+            return true;
+        }
+        return false;
     }
 
     /// <summary>
@@ -276,4 +283,17 @@ public class CardRun : CardBundle
         var newBundle = new CardRun(cards, minCard, maxCard);
         return newBundle;
     }
+}
+
+/// <summary>
+/// Created from an entire hand, this struct holds one possible use of all cards with a seperate list of unused cards (unusedCards + cards = hand)
+/// Extentions found in Utilities -> Extentions
+/// </summary>
+[System.Serializable]
+public struct ValidBundleGroup
+{
+    public List<CardBundle> bundles;
+    public List<Card> cards;
+    public List<Card> unusedCards;
+    public int score;
 }

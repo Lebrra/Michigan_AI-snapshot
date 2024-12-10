@@ -145,7 +145,7 @@ public class Tester : MonoBehaviour
             left.Remove(discard);
 
             int score = 0;
-            score = AI.GetScore(left);
+            score = Utilities.GetScore(left);
 
             Debug.LogWarning("=====================");
             Debug.Log($"My best score is " + score);

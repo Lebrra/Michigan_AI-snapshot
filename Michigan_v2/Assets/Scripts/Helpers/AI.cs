@@ -7,6 +7,301 @@ public static class AI
 {
     const int MAX_LOOPS = 1000;
 
+    /// <summary>
+    /// Given a hand, output all possible bundles that hand can make. This does not attempt to create plays or match bundles that could be played together
+    /// </summary>
+    public static void GetAllBundles(List<Card> hand, int wildValue, out List<CardBundle> bundles)
+    {
+        bundles = new List<CardBundle>();
+        foreach (var cardList in hand.GetCombinations().Where(l => l.Length >= 3).ToList())
+        {
+            var bundleResult = Utilities.TryCreateValidCardBundle(cardList.ToList(), wildValue, true);
+            if (bundleResult != null)
+            {
+                bundles.Add(bundleResult);
+            }
+        }
+    }
+
+    /// <summary>
+    /// Given a hand and another card, output all bundles that could be created including the provided card. This ignores all other bundle possibilities and does not try to make plays
+    /// </summary>
+    public static void GetNewBundles(List<Card> handWithoutNewCard, Card newCard, int wildValue, out List<CardBundle> bundles)
+    {
+        bundles = new List<CardBundle>();
+
+        // first, if we already have this card in hand, we don't need to get all combinations again (ignore wilds for now)
+        if (handWithoutNewCard.Contains(newCard) && !Utilities.IsWild(newCard, wildValue))
+        {
+            // if this, then all we need to do is see if a set of this number exists and add a bundle that uses both instances of the card
+            List<Card> handSet = handWithoutNewCard.Where(c => Utilities.IsWild(c, wildValue) || c.value == newCard.value).ToList();
+            handSet.Add(newCard);
+            foreach (var setList in handSet.GetCombinations().Where(l => l.Length >= 3 && l.Contains(newCard)))
+            {
+                // these should already be valid sets
+                var set = Utilities.TryCreateValidCardBundle(setList.ToList(), wildValue);
+                if (set != null) bundles.Add(set);
+            }
+            bundles.Distinct(); // get rid of dupes before returning (ideally including the ones already in the list but come back to this later)
+            return;
+        }
+        
+        // todo: if new card is wild we could do a messier version of ^
+        
+        var handCopy = handWithoutNewCard.Copy();
+        handCopy.Add(newCard);
+        foreach (var cardList in handCopy.GetCombinations().Where(l => l.Length >= 3 && l.Contains(newCard)).ToList())
+        {
+            var bundleResult = Utilities.TryCreateValidCardBundle(cardList.ToList(), wildValue, true);
+            if (bundleResult != null)
+            {
+                bundles.Add(bundleResult);
+            }
+        }
+    }
+
+    /// <summary>
+    /// Given already processed bundles and their respective hand, find all possible groupings of bundles. This ignores if a discard is needed or not. Assumes bundles list is accurate
+    /// </summary>
+    public static void GetBundleGroups(List<Card> hand, int round, List<CardBundle> bundles, out List<ValidBundleGroup> bundleGroups)
+    {
+        bundleGroups = new List<ValidBundleGroup>();
+
+        if (bundles.Count == 0) return;
+        if (bundles.Count == 1)
+        {
+            bundleGroups.Add(Utilities.CreateBundleGroup(hand.Copy(), bundles[0]));
+            return;
+        }
+
+        // for all loops: iterate forward => don't look backwards at bundles already processed to reduce computations
+
+        // only do this if its possible
+        if (round > 5)
+        {
+            // save by bundle index for now so we can easily tell if a pairing has already been processed
+            List<List<int>> groupingsByIndex = new List<List<int>>();
+            List<Card> testHand = new List<Card>();
+
+            // 2 bundles:
+            for (int bund = 0; bund < bundles.Count - 1; bund++)
+            {
+                for (int nextBund = 1; nextBund < bundles.Count; nextBund++)
+                {
+                    // if bund and nextBund could both be created with the provided hand, then they can exist together and form a group
+                    bool valid = true;
+                    testHand.Clear();
+                    testHand.AddRange(hand);
+                    foreach (var card in bundles[bund].Cards)
+                    {
+                        if (testHand.Contains(card)) testHand.Remove(card);
+                        else
+                        {
+                            valid = false;
+                            break;
+                        }
+                    }
+
+                    if (valid)
+                    {
+                        foreach (var card in bundles[nextBund].Cards)
+                        {
+                            if (testHand.Contains(card)) testHand.Remove(card);
+                            else
+                            {
+                                valid = false;
+                                break;
+                            }
+                        }
+                    }
+
+                    // all done with card iteration for group of 2 bundles
+                    if (valid)
+                    {
+                        // valid!
+                        groupingsByIndex.Add(new List<int>
+                    {
+                        bund,
+                        nextBund
+                    });
+                    }
+                }
+            }
+
+            if (round > 8)
+            {
+                // 3 bundles:   (iterate through every grouping and try to add a bundle from the list, skipping any bundle that is already in the grouping)
+                int group;
+                int currentGroupingCount = groupingsByIndex.Count;
+                for (group = 0; group < currentGroupingCount; group++)  // don't iterate through new groupings! (currentGroupingCount)
+                {
+                    for (int bund = 0; bund < bundles.Count; bund++)
+                    {
+                        // if bund is already in group, skip
+                        if (groupingsByIndex[group].Contains(bund)) continue;
+
+                        // if group and bund could both be created with the provided hand, then they can exist together and form a new group
+                        bool valid = true;
+                        testHand.Clear();
+                        testHand.AddRange(hand);
+                        // current bund:
+                        foreach (var card in bundles[bund].Cards)
+                        {
+                            if (testHand.Contains(card)) testHand.Remove(card);
+                            else
+                            {
+                                valid = false;
+                                break;
+                            }
+                        }
+
+                        if (valid)
+                        {
+                            // bundle 1 in group:
+                            foreach (var card in bundles[groupingsByIndex[group][0]].Cards)
+                            {
+                                if (testHand.Contains(card)) testHand.Remove(card);
+                                else
+                                {
+                                    valid = false;
+                                    break;
+                                }
+                            }
+                        }
+                        if (valid)
+                        {
+                            // bundle 2 in group:
+                            foreach (var card in bundles[groupingsByIndex[group][1]].Cards)
+                            {
+                                if (testHand.Contains(card)) testHand.Remove(card);
+                                else
+                                {
+                                    valid = false;
+                                    break;
+                                }
+                            }
+                        }
+
+
+                        // all done with card iteration for group of 2 bundles
+                        if (valid)
+                        {
+                            // valid!
+                            groupingsByIndex.Add(new List<int>
+                    {
+                        groupingsByIndex[group][0],
+                        groupingsByIndex[group][1],
+                        bund
+                    });
+                        }
+                    }
+                }
+
+                if (round > 11)
+                {
+                    // 4 bundles:   (same as 3 but one bigger this time)
+                    currentGroupingCount = groupingsByIndex.Count;
+                    while (group < currentGroupingCount)        // don't iterate through new groupings! (currentGroupingCount)
+                    {
+                        for (int bund = 0; bund < bundles.Count; bund++)
+                        {
+                            // if bund is already in group, skip
+                            if (groupingsByIndex[group].Contains(bund)) continue;
+
+                            // if group and bund could both be created with the provided hand, then they can exist together and form a new group
+                            bool valid = true;
+                            testHand.Clear();
+                            testHand.AddRange(hand);
+                            // current bund:
+                            foreach (var card in bundles[bund].Cards)
+                            {
+                                if (testHand.Contains(card)) testHand.Remove(card);
+                                else
+                                {
+                                    valid = false;
+                                    break;
+                                }
+                            }
+
+                            if (valid)
+                            {
+                                // bundle 1 in group:
+                                foreach (var card in bundles[groupingsByIndex[group][0]].Cards)
+                                {
+                                    if (testHand.Contains(card)) testHand.Remove(card);
+                                    else
+                                    {
+                                        valid = false;
+                                        break;
+                                    }
+                                }
+                            }
+                            if (valid)
+                            {
+                                // bundle 2 in group:
+                                foreach (var card in bundles[groupingsByIndex[group][1]].Cards)
+                                {
+                                    if (testHand.Contains(card)) testHand.Remove(card);
+                                    else
+                                    {
+                                        valid = false;
+                                        break;
+                                    }
+                                }
+                            }
+                            if (valid)
+                            {
+                                // bundle 3 in group:
+                                foreach (var card in bundles[groupingsByIndex[group][2]].Cards)
+                                {
+                                    if (testHand.Contains(card)) testHand.Remove(card);
+                                    else
+                                    {
+                                        valid = false;
+                                        break;
+                                    }
+                                }
+                            }
+
+
+                            // all done with card iteration for group of 2 bundles
+                            if (valid)
+                            {
+                                // valid!
+                                groupingsByIndex.Add(new List<int>
+                    {
+                        groupingsByIndex[group][0],
+                        groupingsByIndex[group][1],
+                        groupingsByIndex[group][2],
+                        bund
+                    });
+                            }
+                        }
+                        group++;
+                    }
+                }
+            }
+
+            // all done! now create structs from grouping data:
+            foreach (var grouping in groupingsByIndex)
+            {
+                CardBundle[] bunds = new CardBundle[grouping.Count];
+                for (int i = 0; i < grouping.Count; i++) bunds[i] = bundles[grouping[i]];
+                bundleGroups.Add(Utilities.CreateBundleGroup(hand.Copy(), bunds));
+            }
+        }
+
+        // don't forget that every isolated bundle is also a group!
+        foreach (var bund in bundles)
+        {
+            bundleGroups.Add(Utilities.CreateBundleGroup(hand.Copy(), bund));
+        }
+        
+
+        // finally, sort by score
+        bundleGroups.OrderBy(b => b.score);
+    }
+
     public static void FindBestPlay(List<Card> hand, int wildValue, out List<CardBundle> bundles, out List<Card> leftovers)
     {
         // first: find all bundle possibilities
@@ -119,7 +414,7 @@ public static class AI
 
                 // one final thing; if we are about to discard a wild let's try not to do that
                 var finalCard = remainingCards[0];
-                if (finalCard.value == 0 || finalCard.value == wildValue)
+                if (Utilities.IsWild(finalCard, wildValue))
                 {
                     foreach (var bundle in currentBundles)
                     {
@@ -181,7 +476,7 @@ public static class AI
 
             // we can go out; leave
             if (left.Count == 1) return;
-            else bestScore = AI.GetScore(left);
+            else bestScore = Utilities.GetScore(left);
         }
 
         // structure: POSSIBLE PLAYS > BUNDLES > CARDS
@@ -290,7 +585,10 @@ public static class AI
                         }
 
                         var tempBundle = bundle.Copy();
-                        foreach (var card in play) tempBundle.AddCard(card);
+                        foreach (var card in play)
+                        {
+                            tempBundle.AddCard(card);
+                        }
                         foreach (var card in tempHand)
                         {
                             if (tempBundle.CanAddCard(card, wildValue))
@@ -299,8 +597,11 @@ public static class AI
                                 newPlay.AddRange(play);
                                 newPlay.Add(card);
 
-                                foundPlays.Add(newPlay);
-                                plays.Add(newPlay);
+                                if (!plays.Contains(newPlay))   // negates double+ wilds causing extra iterations
+                                {
+                                    foundPlays.Add(newPlay);
+                                    plays.Add(newPlay);
+                                }
                             }
                         }
                     }
@@ -326,130 +627,249 @@ public static class AI
         return allPossiblePlays;
     }
 
-    static List<List<List<Card>>> GetMixedBundlePlays(List<Card> hand, int wildValue, List<CardBundle> playableBundles)
+    public static List<List<List<Card>>> GetMixedBundlePlays(List<Card> hand, int round, List<CardBundle> playableBundles)
     {
         // todo: given the plays found so far, find all possible mixes
-        var isolatedPlays = GetIsolatedBundlePlays(hand, wildValue, playableBundles);
+        var isolatedPlays = GetIsolatedBundlePlays(hand, round, playableBundles);
+        isolatedPlays.Distinct();
 
-        if (playableBundles.Count == 1)
+        if (playableBundles.Count == 1 || isolatedPlays.Count <= 1)
         {
             // no work needed here; exit
             return isolatedPlays;
         }
 
-        var playsToIterate = isolatedPlays.Copy();
+        List<List<List<Card>>> mixedPlays = new();
+        // we already have all possible bundle plays, we just need to know if any of them can be done at the same time
+        // => do any cards overlap?
 
-        // need to mix bundles - 1 times
-        for (int iterations = 0; iterations < playableBundles.Count - 1; iterations++)
+        List<Card> testHand = new List<Card>();
+
+        // 2 bundles:
+        for (int iso = 0; iso < isolatedPlays.Count - 1; iso++)
         {
-            var foundMixedPlays = new List<List<List<Card>>>();
-
-            for (int i = 0; i < playsToIterate.Count; i++)
+            for (int nextIso = 1; nextIso < isolatedPlays.Count; nextIso++)
             {
-                // FIRST: if we are combining plays that both have cards in the same bundle, then skip! isolated already accounted for this
-                var remainingIsolatedPlays = isolatedPlays.Where(iso =>
-                    {
-                        for (int bund = 0; bund < playableBundles.Count; bund++)
-                        {
-                            // assuming a list can't be null here, only empty
-                            if (playsToIterate[i][bund].Count == 0) return true;
-                            else
-                            {
-                                if (iso[bund].Count > 0) return false;
-                            }
-                        }
-                        return true;
-                    }).ToList();
-
-                if (remainingIsolatedPlays.Count == 0) continue;
-
-                // now prep the current bundle states (with isolated[i])
-                var tempHand = hand.Copy(playsToIterate[i].ToArray());
-                List<CardBundle> bundlesAfterPlay = new List<CardBundle>();
-                for (int bund = 0; bund < playableBundles.Count; bund++)
+                bool doContinue = false;
+                // first check if these isolated plays are on the same bundle, if so then skip because iso already accounted for this
+                for (int i = 0; i < playableBundles.Count; i++)
                 {
-                    if (playsToIterate[i][bund] != null)
+                    if (isolatedPlays[iso][i].Count > 0 && isolatedPlays[nextIso][i].Count > 0)
                     {
-                        bundlesAfterPlay.Add(playableBundles[bund].Copy());
-                        foreach (var card in playsToIterate[i][bund])
+                        doContinue = true;
+                        break;
+                    }
+                }
+                if (doContinue) continue;
+
+                // now check if there's any card overlap
+                bool valid = true;
+
+                testHand.Clear();
+                testHand.AddRange(hand);
+                foreach (var list in isolatedPlays[iso])
+                {
+                    foreach (var card in list)
+                    {
+                        if (testHand.Contains(card)) testHand.Remove(card);
+                        else
                         {
-                            // note: for runs, and adding a wild, will this always behave the right way?
-                            bundlesAfterPlay[bund].AddCard(card);
+                            valid = false;
+                            break;
                         }
                     }
-                    else
+                    if (!valid) break;
+                }
+
+                if (valid)
+                {
+                    foreach (var list in isolatedPlays[nextIso])
                     {
-                        bundlesAfterPlay.Add(null);
+                        foreach (var card in list)
+                        {
+                            if (testHand.Contains(card)) testHand.Remove(card);
+                            else
+                            {
+                                valid = false;
+                                break;
+                            }
+                        }
+                        if (!valid) break;
                     }
                 }
 
-                // note we have already checked that there are no overlaps with cards being played in the same bundle
-                foreach (var remainingIsolatedPlay in remainingIsolatedPlays)
+                if (valid)
                 {
-                    bool validPlay = true;
-                    var handCopy = tempHand.Copy();
-                    foreach (var bundlePlay in remainingIsolatedPlay)
+                    // valid!
+                    var mixedPlay = new List<List<Card>>();
+                    for (int i = 0; i < playableBundles.Count; i++)
                     {
-                        if (bundlePlay != null && validPlay)
+                        // already determined that plays iso and nextIso are not on the same bundle
+                        if (isolatedPlays[iso][i].Count > 0) mixedPlay.Add(isolatedPlays[iso][i]);
+                        else if (isolatedPlays[nextIso][i].Count > 0) mixedPlay.Add(isolatedPlays[nextIso][i]);
+                        else mixedPlay.Add(new List<Card>());
+                    }
+
+                    mixedPlays.Add(mixedPlay);
+                }
+            }
+        }
+
+        if (round > 8)
+        {
+            // 3 bundles:
+            int mixed;
+            int currentMixedCount = mixedPlays.Count;
+            for (mixed = 0; mixed < currentMixedCount; mixed++)  // don't iterate through new groupings! (currentGroupingCount)
+            {
+                for (int iso = 0; iso < isolatedPlays.Count; iso++)
+                {
+                    bool doContinue = false;
+                    // first check if these isolated plays are on the same bundle, if so then skip because iso already accounted for this
+                    for (int i = 0; i < playableBundles.Count; i++)
+                    {
+                        if (isolatedPlays[iso][i].Count > 0 && mixedPlays[mixed][i].Count > 0)
                         {
-                            foreach (var card in bundlePlay)
+                            doContinue = true;
+                            break;
+                        }
+                    }
+                    if (doContinue) continue;
+
+                    bool valid = true;
+                    // current isolated:
+                    testHand.Clear();
+                    testHand.AddRange(hand);
+                    foreach (var list in isolatedPlays[iso])
+                    {
+                        foreach (var card in list)
+                        {
+                            if (testHand.Contains(card)) testHand.Remove(card);
+                            else
                             {
-                                if (handCopy.Contains(card))
-                                {
-                                    handCopy.Remove(card);
-                                }
+                                valid = false;
+                                break;
+                            }
+                        }
+                        if (!valid) break;
+                    }
+
+                    if (valid)
+                    {
+                        // current mixed:
+                        foreach (var list in mixedPlays[mixed])
+                        {
+                            foreach (var card in list)
+                            {
+                                if (testHand.Contains(card)) testHand.Remove(card);
                                 else
                                 {
-                                    // these plays cannot be played together
-                                    validPlay = false;
+                                    valid = false;
                                     break;
                                 }
                             }
+                            if (!valid) break;
                         }
+                    }
 
-                        if (validPlay)
+
+                    if (valid)
+                    {
+                        // valid!
+                        var mixedPlay = new List<List<Card>>();
+                        for (int i = 0; i < playableBundles.Count; i++)
                         {
-                            var newPlay = playsToIterate[i].Copy();
-                            for (int bund = 0; bund < newPlay.Count; bund++)
-                            {
-                                if (remainingIsolatedPlay.Count > i && remainingIsolatedPlay[i].Count > 0) // && newPlay[i].Count == 0)    <- this shouldn't happen
-                                {
-                                    // assuming all lists are defined
-                                    newPlay[i] = remainingIsolatedPlay[i].Copy();
-                                }
-                            }
-
-                            foundMixedPlays.Add(newPlay);
+                            // already determined that plays iso and nextIso are not on the same bundle
+                            if (isolatedPlays[iso][i].Count > 0) mixedPlay.Add(isolatedPlays[iso][i]);
+                            else if (mixedPlays[mixed][i].Count > 0) mixedPlay.Add(mixedPlays[mixed][i]);
+                            else mixedPlay.Add(new List<Card>());
                         }
+
+                        mixedPlays.Add(mixedPlay);
                     }
                 }
             }
 
-            // all done, update for next iteration
-            isolatedPlays.AddRange(foundMixedPlays);
-            playsToIterate = foundMixedPlays.Copy();
+            if (round > 11)
+            {
+                // 4 bundles:   (same as 3 but one bigger this time)
+                currentMixedCount = mixedPlays.Count;
+                while (mixed < currentMixedCount)        // don't iterate through new groupings! (currentGroupingCount)
+                {
+                    for (int iso = 0; iso < isolatedPlays.Count; iso++)
+                    {
+                        bool doContinue = false;
+                        // first check if these isolated plays are on the same bundle, if so then skip because iso already accounted for this
+                        for (int i = 0; i < playableBundles.Count; i++) // max 4 iterations here
+                        {
+                            if (isolatedPlays[iso][i].Count > 0 && mixedPlays[mixed][i].Count > 0)
+                            {
+                                doContinue = true;
+                                break;
+                            }
+                        }
+                        if (doContinue) continue;
+
+                        bool valid = true;
+                        // current isolated:
+                        testHand.Clear();
+                        testHand.AddRange(hand);
+                        foreach (var list in isolatedPlays[iso])
+                        {
+                            foreach (var card in list)
+                            {
+                                if (testHand.Contains(card)) testHand.Remove(card);
+                                else
+                                {
+                                    valid = false;
+                                    break;
+                                }
+                            }
+                            if (!valid) break;
+                        }
+
+                        if (valid)
+                        {
+                            // current mixed:
+                            foreach (var list in mixedPlays[mixed])
+                            {
+                                foreach (var card in list)
+                                {
+                                    if (testHand.Contains(card)) testHand.Remove(card);
+                                    else
+                                    {
+                                        valid = false;
+                                        break;
+                                    }
+                                }
+                                if (!valid) break;
+                            }
+                        }
+
+
+                        if (valid)
+                        {
+                            // valid!
+                            var mixedPlay = new List<List<Card>>();
+                            for (int i = 0; i < playableBundles.Count; i++)
+                            {
+                                // already determined that plays iso and nextIso are not on the same bundle
+                                if (isolatedPlays[iso][i].Count > 0) mixedPlay.Add(isolatedPlays[iso][i]);
+                                else if (mixedPlays[mixed][i].Count > 0) mixedPlay.Add(mixedPlays[mixed][i]);
+                                else mixedPlay.Add(new List<Card>());
+                            }
+
+                            mixedPlays.Add(mixedPlay);
+                        }
+                        mixed++;
+                    }
+                }
+            }
         }
 
-        // comments from various outdated places:
-        // TODO: need functionality for playing on multiple bundles !
-        // could we not just keep calling GetAllBundlePlays while we are looking at a unique remaining hand? -> ew though
-        // now we have bundles.Count list of possible plays per bundle - we need to see if we can play on multiple at once now
-
-        return isolatedPlays;
-    }
-
-    /// <summary>
-    /// Assumes discard is not in here
-    /// </summary>
-    /// <returns></returns>
-    public static int GetScore(List<Card> leftovers)
-    {
-        int score = 0;
-        for (int j = 0; j < leftovers.Count; j++)
-        {
-            score += Utilities.GetScoreValue(leftovers[j]);
-        }
-        return score;
+        // finally add the isolated plays:
+        mixedPlays.AddRange(isolatedPlays);
+        return mixedPlays;
     }
 
     public static Card GetLastTurnDiscard(List<Card> leftovers)
@@ -460,7 +880,7 @@ public static class AI
     public static Card FindBestDiscard(List<Card> leftovers)
     {
         // first remove wilds; don't discard these
-        leftovers = leftovers.Where(c => c.value > 0).ToList();
+        leftovers = leftovers.Where(c => !Utilities.IsWild(c)).ToList();
 
         if (leftovers.Count < 2) return leftovers.LastOrDefault();
 
@@ -670,8 +1090,14 @@ public static class AI
 
     public static Card FindBestDiscardImproved(List<Card> leftovers)
     {
+        if (leftovers.Count == 0)
+        {
+            TextDebugger.Error("No cards left to discard from! We should have gone out then...");
+            return default;
+        }
+
         // first remove wilds; don't discard these
-        leftovers = leftovers.Where(c => c.value > 0).ToList();
+        leftovers = leftovers.Where(c => !Utilities.IsWild(c)).ToList();
 
         if (leftovers.Count < 2) return leftovers.LastOrDefault();
 
