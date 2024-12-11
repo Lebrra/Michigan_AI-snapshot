@@ -33,6 +33,20 @@ public static class Utilities
         }
     }
 
+    public static int StringToValue(string str)
+    {
+        switch (str)
+        {
+            case "J": return 11;
+            case "Q": return 12;
+            case "K": return 13;
+            case "JOKER": return 0;
+            default:
+                if (int.TryParse(str, out var value)) return value;
+                else return -1;
+        }
+    }
+
     #region Extensions
 
     public static List<T> Copy<T>(this List<T> list, params List<T>[] exclusions)

@@ -40,8 +40,8 @@ public class AIDemo : MonoBehaviour
         // init values first
         if (int.TryParse(playerCount.options[playerCount.value].text, out int count))
         {
-            if (int.TryParse(roundStart.options[roundStart.value].text, out int round))
-                turnStartOverride = round;
+            var round = Utilities.StringToValue(roundStart.options[roundStart.value].text);
+            turnStartOverride = Mathf.Clamp(round, 3, 13);
 
             for (int i = 0; i < count; i++)
             {
